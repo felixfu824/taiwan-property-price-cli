@@ -1,0 +1,14 @@
+tw-lvr-cli
+Copyright 2026 tw-lvr-cli contributors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+-------------------------------------------------------------------------------
+Data attribution (mandatory)
+-------------------------------------------------------------------------------
+Data obtained through this software originates from 中華民國內政部 (Ministry of the
+Interior, R.O.C.) 不動產交易實價查詢服務 (lvr.land.moi.gov.tw), provided under the
+政府資料開放授權條款 (Open Government Data License, convertible to CC BY 4.0).
+Redistribution and derivative works are permitted; attribution to 內政部 is
+REQUIRED. The data is de-identified by law (平均地權條例 §47); do not attempt
+re-identification. This project is not affiliated with, or endorsed by, 內政部.

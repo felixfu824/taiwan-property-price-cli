@@ -1,0 +1,19 @@
+{
+  "name": "tw-lvr-cli",
+  "interface": {
+    "displayName": "tw-lvr-cli (台灣實價登錄 CLI)"
+  },
+  "plugins": [
+    {
+      "name": "tw-lvr-cli",
+      "source": {
+        "source": "local",
+        "path": "./plugins/tw-lvr-cli"
+      },
+      "policy": {
+        "installation": "AVAILABLE"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+tmp/
+ROADMAP.md
+analysis/
+value-prop-1-pager.md
+
+# Internal / dev-only — kept local, NOT shipped to the public repo or npm
+.claude/
+test/
+docs/
+CLAUDE.md
+AGENTS.md
+TEST_CASES.md
+PRODUCTION_TEST_PLAN.md
+pipeline-design.md
+legal-tos-assessment.md

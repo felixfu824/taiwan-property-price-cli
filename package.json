@@ -1,0 +1,70 @@
+{
+  "name": "tw-lvr-cli",
+  "version": "0.1.0",
+  "description": "台灣實價登錄 CLI — latest building-level Taiwan real-price (內政部實價登錄) transactions as clean JSON. Deterministic CLI + library + Agent Skill, no server, no model in the loop.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "tw-lvr-cli contributors",
+  "homepage": "https://github.com/felixfu824/tw-lvr-cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/felixfu824/tw-lvr-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/felixfu824/tw-lvr-cli/issues"
+  },
+  "keywords": [
+    "taiwan",
+    "real-estate",
+    "實價登錄",
+    "lvr",
+    "property",
+    "transactions",
+    "open-data",
+    "agent-skill",
+    "claude-code",
+    "codex",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "tw-lvr": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "skills/",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "prepublishOnly": "npm run build",
+    "build": "tsc -p tsconfig.json && node scripts/sync-codex-plugin.mjs",
+    "sync": "node scripts/sync-codex-plugin.mjs",
+    "test": "tsc --noEmit -p tsconfig.json && echo \"Type check passed. Run 'LVR_SKIP_LIVE=1 bun test' for offline tests or 'npm run test:live' for the serial live gate — tests use bun:test.\"",
+    "test:bun": "bun test --max-concurrency=1",
+    "test:live": "bun test --max-concurrency=1",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "playwright-core": "^1.49.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

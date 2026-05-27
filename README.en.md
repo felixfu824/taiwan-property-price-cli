@@ -1,0 +1,158 @@
+# tw-lvr-cli — Taiwan Real-Price Registry CLI
+
+**A low-context-footprint, high-reliability CLI for Taiwan's real-price registry (內政部實價登錄)** — turns the latest building-level transactions into clean JSON/CSV that stays on disk, out of the LLM's context. For agents, apps, and scripts. Shipped with a portable Agent Skill (`SKILL.md`) as a Claude/Codex-compatible plugin.
+
+> 繁體中文為主要版本 → [README.md](./README.md). Just looking up one building? Use 591 or 樂居 — free, great UIs, already cleaned. tw-lvr-cli fills the other gap: **clean, latest Taiwan real-price data a program, app, or agent can consume directly.**
+
+---
+
+## Core value: low context footprint × high reliability
+
+An agent / app / script can pull **thousands to tens of thousands of transactions in one go** while the model's context stays almost untouched. Four design pieces behind it:
+
+**① Results stay on disk, never touch context**
+`--out` writes a whole district to one file; pull the rows you want with `--top N` or jq/grep — the data never enters the model's context.
+
+**② Shape: CLI + library + portable Skill — no server to host**
+Nothing loads into context until you invoke it; the Skill keeps only its short name + description resident, loading the body on use. `import` it straight into a web backend, CI, or cron.
+
+**③ Performance & reliability: deterministic and repeatable**
+The same query always returns the same result; **~2s per query** (CLI end-to-end, startup included). The logic lives in code, not in a model driving a browser in the loop (slow, unstable, token-hungry).
+
+**④ Output: clean, structured JSON / CSV**
+What you get is program-ready structured data.
+
+---
+
+## Scope (vs. using the official registry website yourself)
+
+The official site is free, the most complete source, and ideal for a *human* looking up one property in a browser. tw-lvr-cli doesn't replace it — it turns the site's "manual, one-at-a-time, web-page" workflow into "command in, clean structured data out, batchable, callable by code."
+
+| What you can do on the website | What tw-lvr-cli adds |
+|---|---|
+| Query one filter set, read an HTML table | One command → clean JSON / CSV |
+| Manual copy | `--out` to a file, drop into a pipeline |
+| No batch: page through a whole district | Pull a whole district in one call, to disk |
+| Human clicks only, not programmable | Callable by a script / agent / backend |
+
+**Covered today:** existing-home sale (買賣) and pre-sale (預售屋) queries. **Not yet:** rental (租賃) and pre-sale-project registry (預售屋建案) — different data schemas, tracked as follow-ups.
+
+---
+
+## Example output
+
+Latest 3 transactions on 關新路 in the Hsinchu Science Park area (關埔 redevelopment zone):
+
+```bash
+tw-lvr extract --where "新竹市東區關新路" --from 2024 --to 2026 --top 3 --pretty
+```
+
+`--top 3`: return only the 3 most recent rows, **newest always first** (drop it to get everything). Output (fields abbreviated; full set via `tw-lvr glossary`):
+
+```json
+[
+  {
+    "building": "丹麥",
+    "address": "新竹市關新路19巷99號二樓",
+    "txnDateRoc": "114/12/27",
+    "totalPriceWan": 2380,
+    "siteAdjUnitPrice": 48.1445,
+    "totalAreaPing": 49.43,
+    "layout": "3房2廳2衛"
+  },
+  {
+    "building": "北歐",
+    "address": "新竹市關新路19巷3號十二樓",
+    "txnDateRoc": "114/12/27",
+    "totalPriceWan": 3930,
+    "siteAdjUnitPrice": 45.6988,
+    "totalAreaPing": 86,
+    "layout": "4房2廳2衛"
+  },
+  {
+    "building": "月影",
+    "address": "新竹市關新路29號十二樓之33",
+    "txnDateRoc": "114/12/14",
+    "totalPriceWan": 1050,
+    "siteAdjUnitPrice": 53.3028,
+    "totalAreaPing": 19.7,
+    "layout": "1房1廳1衛"
+  }
+]
+```
+
+Add `--refine` for exclusion flags (親友 / 純車位 / 非住宅) and per-record `confidence`; add `--out result.json` to write to disk and keep it out of context entirely.
+
+## Use as a plugin (Claude Code & Codex)
+
+The plugin bundles an Agent Skill (`skills/tw-lvr-cli/SKILL.md`, the open Agent Skills standard) as the instruction layer — it tells the agent when and how to call `tw-lvr`; the `tw-lvr` CLI does the actual work. Install the plugin and just try it: SKILL.md guides the agent to install the CLI (`npm i -g tw-lvr-cli` or `npx`) and the browser on first use.
+
+**Claude Code:**
+```
+/plugin marketplace add felixfu824/tw-lvr-cli
+/plugin install tw-lvr-cli@tw-lvr-cli
+```
+
+**Codex:**
+```bash
+codex plugin marketplace add felixfu824/tw-lvr-cli
+codex plugin add tw-lvr-cli@tw-lvr-cli
+```
+
+---
+
+## Use as a CLI
+
+**1. Install**
+
+```bash
+npm i -g tw-lvr-cli                               # or: bun add -g tw-lvr-cli
+npx playwright install chromium-headless-shell   # REQUIRED — the one non-JS dependency (~190MB)
+```
+
+`chrome-headless-shell` is mandatory; if missing the tool exits with code `6` (`ERR_ENV`) and prints the install command. To try without a global install, run `npx -y tw-lvr-cli@latest extract ...` (still install the browser first).
+
+**2. Commands**
+
+```bash
+tw-lvr extract --where "台北市信義區松德路169巷" --from 2024 --to 2026 --refine --pretty
+tw-lvr extract --where "新北市板橋區文化路一段" --from 2023 --to 2026 --out transactions.csv
+tw-lvr extract --where "苗栗縣竹南鎮" --from 2026 --to 2026 --presale --community "藏富天下"
+
+tw-lvr glossary       # explain every output field, its origin, and formula
+tw-lvr --help / --version
+```
+
+Full surface:
+```
+tw-lvr extract --where <address> --from <YYYY> --to <YYYY>
+               [--refine] [--ptype 1,2] [--query biz|sale | --presale]
+               [--top N | --limit N] [--community <name>]
+               [--out <file|dir>] [--format json|csv] [--pretty]
+```
+- `--query biz` (existing-home sale) is the default; `--presale` switches to the pre-sale tab.
+- **Keep results off-context:** beyond a handful of rows, use `--out` and read back only the slice you need.
+- For long spans / dense districts, chunk the year range (≤5 years per call); one oversized response fails with `ERR_NETWORK`.
+- Exit codes: `0` ok/empty · `2` bad input · `3` site changed · `4` network · `5` rate limited · `6` environment/browser · `7` partial.
+- From source: `bun install && bun run build`, then `node dist/cli.js extract ...`.
+- Need programmatic access? The same engine can be `import`ed directly (`extract` / `extractRefined`, types in `src/index.ts`).
+
+---
+
+## Architecture
+
+```
+Resolve → Fetch → Normalize → Refine
+```
+- **Resolve:** parse the human address + years into the government site's query params.
+- **Fetch:** launch a transient headless Chromium and capture the raw `QueryPrice` transaction rows.
+- **Normalize:** turn raw government rows into clean, typed `CleanRawRecord`s — unified field names, units (坪/萬元), and ROC dates, with no judgement applied.
+- **Refine** (only with `--refine`): adds the site-displayed adjusted unit price, exclusion flags (親友/純車位/非住宅), and `confidence` on top of Clean Raw.
+
+---
+
+## Data &amp; license
+
+- **Data:** Taiwan Ministry of the Interior real-price open data under the **Open Government Data License (OGDL, convertible to CC BY 4.0)**; **attribution to 內政部 is required**; de-identified by law (平均地權條例 §47) — do not attempt re-identification.
+- **Code:** Apache-2.0 (see `LICENSE` and `NOTICE`).
+- Not affiliated with or endorsed by 內政部; provided as-is, no warranty.

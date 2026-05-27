@@ -157,4 +157,5 @@ Resolve → Fetch → Normalize → Refine
 
 - **Data:** Taiwan Ministry of the Interior real-price open data under the **Open Government Data License (OGDL, convertible to CC BY 4.0)**; **attribution to 內政部 is required**; de-identified by law (平均地權條例 §47) — do not attempt re-identification.
 - **Code:** Apache-2.0 (see `LICENSE` and `NOTICE`).
+- **Privacy:** tw-lvr-cli runs locally — it sends no telemetry, collects no personal data, creates no account, and transmits nothing externally; all output is written only to the local path you pass via `--out`. Its only outbound network request is to the Taiwan real-price registry (`lvr.land.moi.gov.tw`) to fetch public, already-de-identified transaction records.
 - Not affiliated with or endorsed by 內政部; provided as-is, no warranty.

@@ -1,5 +1,7 @@
 # tw-lvr-cli — 台灣實價登錄 CLI
 
+[![npm version](https://img.shields.io/npm/v/tw-lvr-cli.svg)](https://www.npmjs.com/package/tw-lvr-cli) [![license](https://img.shields.io/npm/l/tw-lvr-cli.svg)](./LICENSE) [![node](https://img.shields.io/node/v/tw-lvr-cli.svg)](https://nodejs.org)
+
 **低 context 佔用的實價登錄查詢 CLI。** 把內政部最新的逐棟成交，整理成乾淨的 JSON／CSV 寫到磁碟，不佔用 LLM 的 context——給 agent、app、腳本使用；並隨附 `SKILL.md`，打包成 Claude／Codex 相容的 plugin。
 
 > 只想查一間房？用 591 / 樂居就好——免費、UI 好、已清洗。tw-lvr-cli 補的是另一塊空缺：**能被程式／app／agent 直接吃的乾淨即時實價資料。**

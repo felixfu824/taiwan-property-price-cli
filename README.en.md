@@ -1,5 +1,7 @@
 # tw-lvr-cli — Taiwan Real-Price Registry CLI
 
+[![npm version](https://img.shields.io/npm/v/tw-lvr-cli.svg)](https://www.npmjs.com/package/tw-lvr-cli) [![license](https://img.shields.io/npm/l/tw-lvr-cli.svg)](./LICENSE) [![node](https://img.shields.io/node/v/tw-lvr-cli.svg)](https://nodejs.org)
+
 **A low-context-footprint, high-reliability CLI for Taiwan's real-price registry (內政部實價登錄)** — turns the latest building-level transactions into clean JSON/CSV that stays on disk, out of the LLM's context. For agents, apps, and scripts. Shipped with a portable Agent Skill (`SKILL.md`) as a Claude/Codex-compatible plugin.
 
 > 繁體中文為主要版本 → [README.md](./README.md). Just looking up one building? Use 591 or 樂居 — free, great UIs, already cleaned. tw-lvr-cli fills the other gap: **clean, latest Taiwan real-price data a program, app, or agent can consume directly.**

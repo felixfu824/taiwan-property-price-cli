@@ -1,6 +1,6 @@
 {
   "name": "tw-lvr-cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "台灣實價登錄 CLI — latest building-level Taiwan real-price (內政部實價登錄) transactions as clean JSON. Deterministic CLI + library + Agent Skill, packaged as a Claude/Codex-compatible plugin. No server, no model in the loop.",
   "type": "module",
   "license": "Apache-2.0",

@@ -1,7 +1,7 @@
 {
   "name": "tw-lvr-cli",
-  "version": "0.1.0",
-  "description": "台灣實價登錄 CLI — latest building-level Taiwan real-price (內政部實價登錄) transactions as clean JSON. Deterministic CLI + library + Agent Skill, no server, no model in the loop. Requires the chrome-headless-shell browser binary (npx playwright install chromium-headless-shell).",
+  "version": "0.1.2",
+  "description": "台灣實價登錄 CLI — latest building-level Taiwan real-price (內政部實價登錄) transactions as clean JSON. Deterministic CLI + library + Agent Skill, packaged as a Claude/Codex-compatible plugin. No server, no model in the loop. Requires the chrome-headless-shell browser binary (npx playwright install chromium-headless-shell).",
   "author": {
     "name": "tw-lvr-cli contributors"
   },
@@ -11,10 +11,22 @@
   "keywords": [
     "taiwan",
     "real-estate",
+    "real-estate-data",
+    "taiwan-real-estate",
     "實價登錄",
+    "real-price-registry",
     "lvr",
     "property",
-    "open-data"
+    "property-transactions",
+    "open-data",
+    "cli",
+    "library",
+    "agent-skill",
+    "plugin",
+    "claude-plugin",
+    "codex-plugin",
+    "claude-code",
+    "codex"
   ],
   "skills": "./skills/"
 }

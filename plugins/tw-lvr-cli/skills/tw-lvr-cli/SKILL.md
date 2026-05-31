@@ -1,7 +1,7 @@
 ---
 name: tw-lvr-cli
 description: >-
-  台灣實價登錄 CLI. Fetch the LATEST building-level real-estate transaction data
+  TW Property Price CLI (台灣實價登錄 CLI). Fetch the LATEST building-level real-estate transaction data
   from Taiwan's 內政部不動產實價登錄 (lvr.land.moi.gov.tw) as clean JSON. Use when the
   user wants recent transactions for an address, building, or 社區 (community) —
   especially rows newer than the quarterly open-data ZIP — building-level price
@@ -10,7 +10,7 @@ description: >-
   For programmatic / agent use; a human eyeballing one building should use 591 or 樂居.
 ---
 
-# tw-lvr-cli — latest Taiwan real-price transactions, as clean JSON
+# TW Property Price CLI (tw-lvr-cli) — latest Taiwan property transactions, as clean JSON
 
 A deterministic, headless CLI. One command pulls building-level transactions
 the way the government site loads them, then cleans and optionally refines them

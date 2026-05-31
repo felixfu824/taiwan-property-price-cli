@@ -1,17 +1,17 @@
 {
   "name": "tw-lvr-cli",
-  "description": "台灣實價登錄 CLI — Taiwan real-price registry (內政部實價登錄) as clean JSON, for Claude Code & Codex.",
+  "description": "TW Property Price CLI (台灣實價登錄 CLI) — Taiwan property transaction prices as clean JSON/CSV, for Claude Code & Codex.",
   "owner": {
     "name": "tw-lvr-cli contributors",
-    "url": "https://github.com/felixfu824/tw-lvr-cli"
+    "url": "https://github.com/felixfu824/taiwan-property-price-cli"
   },
   "plugins": [
     {
       "name": "tw-lvr-cli",
       "source": "./",
-      "description": "台灣實價登錄 CLI — latest building-level Taiwan real-price (內政部實價登錄) transactions as clean JSON. Agent Skill + tw-lvr CLI, no server, no model in the loop.",
+      "description": "TW Property Price CLI (台灣實價登錄 CLI) — Taiwan property transaction prices from 內政部實價登錄 as clean JSON/CSV. Agent Skill + tw-lvr CLI, no server, no model in the loop.",
       "license": "Apache-2.0",
-      "homepage": "https://github.com/felixfu824/tw-lvr-cli",
+      "homepage": "https://github.com/felixfu824/taiwan-property-price-cli",
       "category": "Productivity"
     }
   ]

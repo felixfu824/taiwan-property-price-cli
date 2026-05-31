@@ -1,14 +1,14 @@
-# tw-lvr-cli — 台灣實價登錄 CLI
+# TW Property Price CLI (台灣實價登錄 CLI)
 
 [![npm version](https://img.shields.io/npm/v/tw-lvr-cli.svg)](https://www.npmjs.com/package/tw-lvr-cli) [![license](https://img.shields.io/npm/l/tw-lvr-cli.svg)](./LICENSE) [![node](https://img.shields.io/node/v/tw-lvr-cli.svg)](https://nodejs.org)
 
-**低 context 佔用的實價登錄查詢 CLI。** 把內政部最新的逐棟成交，整理成乾淨的 JSON／CSV 寫到磁碟，不佔用 LLM 的 context——給 agent、app、腳本使用；並隨附 `SKILL.md`，打包成 Claude／Codex 相容的 plugin。
+**低 context 佔用的台灣房價成交資料 CLI。** 把內政部實價登錄最新的逐棟成交價格，整理成乾淨的 JSON／CSV 寫到磁碟，不佔用 LLM 的 context——給 agent、app、腳本使用；並隨附 `SKILL.md`，打包成 Claude／Codex 相容的 plugin。npm 套件仍是 `tw-lvr-cli`，指令仍是 `tw-lvr`。
 
-> 只想查一間房？用 591 / 樂居就好——免費、UI 好、已清洗。tw-lvr-cli 補的是另一塊空缺：**能被程式／app／agent 直接吃的乾淨即時實價資料。**
+> 只想查一間房？用 591 / 樂居就好——免費、UI 好、已清洗。TW Property Price CLI 補的是另一塊空缺：**能被程式／app／agent 直接吃的乾淨即時實價資料。**
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/felixfu824/tw-lvr-cli/master/media/readme-demo.gif"
-       alt="tw-lvr-cli demo：新竹關新路查詢回傳乾淨 JSON；新北板橋整區 8,387 筆寫入磁碟，0 列進入模型 context"
+  <img src="https://raw.githubusercontent.com/felixfu824/taiwan-property-price-cli/master/media/readme-demo.gif"
+       alt="TW Property Price CLI demo：新竹關新路查詢回傳乾淨 JSON；新北板橋整區 8,387 筆寫入磁碟，0 列進入模型 context"
        width="100%">
 </p>
 
@@ -36,9 +36,9 @@
 
 ## 功能範圍（相對於自己上實價登錄官網）
 
-官網免費、資料最完整，適合人用瀏覽器查單一物件。tw-lvr-cli 不取代官網，而是把官網上「人工、一次一筆、看網頁」的流程，換成「下指令、拿乾淨結構化資料、可批次、可被程式呼叫」。
+官網免費、資料最完整，適合人用瀏覽器查單一物件。TW Property Price CLI 不取代官網，而是把官網上「人工、一次一筆、看網頁」的流程，換成「下指令、拿乾淨結構化資料、可批次、可被程式呼叫」。
 
-| 自己上官網能做 | tw-lvr-cli 多給你 |
+| 自己上官網能做 | TW Property Price CLI 多給你 |
 |---|---|
 | 一次查一組條件，看網頁表格 | 一行指令拿到乾淨 JSON／CSV |
 | 人工複製 | 直接 `--out` 寫檔，可進 pipeline |
@@ -99,13 +99,13 @@ plugin 內含一份 Agent Skill（`skills/tw-lvr-cli/SKILL.md`，採開放 Agent
 
 **Claude Code：**
 ```
-/plugin marketplace add felixfu824/tw-lvr-cli
+/plugin marketplace add felixfu824/taiwan-property-price-cli
 /plugin install tw-lvr-cli@tw-lvr-cli
 ```
 
 **Codex：**
 ```bash
-codex plugin marketplace add felixfu824/tw-lvr-cli
+codex plugin marketplace add felixfu824/taiwan-property-price-cli
 codex plugin add tw-lvr-cli@tw-lvr-cli
 ```
 
@@ -172,6 +172,6 @@ Resolve → Fetch → Normalize → Refine
 
 ## <a id="english"></a>English
 
-**tw-lvr-cli** is a **low-context-footprint CLI for Taiwan's real-price registry (內政部實價登錄), packaged with a portable Agent Skill (`SKILL.md`) as a Claude/Codex-compatible plugin** — it turns the latest building-level transactions into clean JSON that stays on disk, out of the model's context, so an agent can pull a whole district without bloating its context. It also works as an importable TypeScript library + CLI — no server to host. Deterministic by design — the same query always returns the same result, fast (~2s/query), with clean JSON/CSV output.
+**TW Property Price CLI** (`tw-lvr-cli` on npm) is a **low-context-footprint CLI for Taiwan property transaction prices from 內政部實價登錄, packaged with a portable Agent Skill (`SKILL.md`) as a Claude/Codex-compatible plugin** — it turns the latest building-level transactions into clean JSON/CSV that stays on disk, out of the model's context, so an agent can pull a whole district without bloating its context. It also works as an importable TypeScript library + CLI — no server to host. Deterministic by design — the same query always returns the same result, fast (~2s/query).
 
 → **Full English README: [README.en.md](./README.en.md)**

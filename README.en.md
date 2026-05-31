@@ -1,14 +1,14 @@
-# tw-lvr-cli — Taiwan Real-Price Registry CLI
+# TW Property Price CLI (台灣實價登錄 CLI)
 
 [![npm version](https://img.shields.io/npm/v/tw-lvr-cli.svg)](https://www.npmjs.com/package/tw-lvr-cli) [![license](https://img.shields.io/npm/l/tw-lvr-cli.svg)](./LICENSE) [![node](https://img.shields.io/node/v/tw-lvr-cli.svg)](https://nodejs.org)
 
-**A low-context-footprint, high-reliability CLI for Taiwan's real-price registry (內政部實價登錄)** — turns the latest building-level transactions into clean JSON/CSV that stays on disk, out of the LLM's context. For agents, apps, and scripts. Shipped with a portable Agent Skill (`SKILL.md`) as a Claude/Codex-compatible plugin.
+**A low-context-footprint, high-reliability CLI for Taiwan property transaction prices from 內政部實價登錄** — turns the latest building-level transactions into clean JSON/CSV that stays on disk, out of the LLM's context. For agents, apps, and scripts. Shipped with a portable Agent Skill (`SKILL.md`) as a Claude/Codex-compatible plugin. The npm package stays `tw-lvr-cli`; the command stays `tw-lvr`.
 
-> 繁體中文為主要版本 → [README.md](./README.md). Just looking up one building? Use 591 or 樂居 — free, great UIs, already cleaned. tw-lvr-cli fills the other gap: **clean, latest Taiwan real-price data a program, app, or agent can consume directly.**
+> 繁體中文為主要版本 → [README.md](./README.md). Just looking up one building? Use 591 or 樂居 — free, great UIs, already cleaned. TW Property Price CLI fills the other gap: **clean, latest Taiwan property transaction data a program, app, or agent can consume directly.**
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/felixfu824/tw-lvr-cli/master/media/readme-demo.gif"
-       alt="tw-lvr-cli demo — a Hsinchu lookup returns clean JSON; a whole Banqiao district writes 8,387 rows to disk, 0 rows in model context"
+  <img src="https://raw.githubusercontent.com/felixfu824/taiwan-property-price-cli/master/media/readme-demo.gif"
+       alt="TW Property Price CLI demo — a Hsinchu lookup returns clean JSON; a whole Banqiao district writes 8,387 rows to disk, 0 rows in model context"
        width="100%">
 </p>
 
@@ -34,9 +34,9 @@ What you get is program-ready structured data.
 
 ## Scope (vs. using the official registry website yourself)
 
-The official site is free, the most complete source, and ideal for a *human* looking up one property in a browser. tw-lvr-cli doesn't replace it — it turns the site's "manual, one-at-a-time, web-page" workflow into "command in, clean structured data out, batchable, callable by code."
+The official site is free, the most complete source, and ideal for a *human* looking up one property in a browser. TW Property Price CLI doesn't replace it — it turns the site's "manual, one-at-a-time, web-page" workflow into "command in, clean structured data out, batchable, callable by code."
 
-| What you can do on the website | What tw-lvr-cli adds |
+| What you can do on the website | What TW Property Price CLI adds |
 |---|---|
 | Query one filter set, read an HTML table | One command → clean JSON / CSV |
 | Manual copy | `--out` to a file, drop into a pipeline |
@@ -97,13 +97,13 @@ The plugin bundles an Agent Skill (`skills/tw-lvr-cli/SKILL.md`, the open Agent 
 
 **Claude Code:**
 ```
-/plugin marketplace add felixfu824/tw-lvr-cli
+/plugin marketplace add felixfu824/taiwan-property-price-cli
 /plugin install tw-lvr-cli@tw-lvr-cli
 ```
 
 **Codex:**
 ```bash
-codex plugin marketplace add felixfu824/tw-lvr-cli
+codex plugin marketplace add felixfu824/taiwan-property-price-cli
 codex plugin add tw-lvr-cli@tw-lvr-cli
 ```
 

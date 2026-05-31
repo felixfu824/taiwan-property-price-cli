@@ -1,7 +1,7 @@
 {
   "name": "tw-lvr-cli",
   "interface": {
-    "displayName": "tw-lvr-cli (台灣實價登錄 CLI)"
+    "displayName": "TW Property Price CLI (台灣實價登錄 CLI)"
   },
   "plugins": [
     {

@@ -1,17 +1,17 @@
 {
   "name": "tw-lvr-cli",
   "version": "0.1.2",
-  "description": "台灣實價登錄 CLI — latest building-level Taiwan real-price (內政部實價登錄) transactions as clean JSON. Deterministic CLI + library + Agent Skill, packaged as a Claude/Codex-compatible plugin. No server, no model in the loop.",
+  "description": "TW Property Price CLI (台灣實價登錄 CLI) — Taiwan property transaction prices from 內政部實價登錄 as clean JSON/CSV. Deterministic CLI + library + Agent Skill, packaged as a Claude/Codex-compatible plugin. No server, no model in the loop.",
   "type": "module",
   "license": "Apache-2.0",
   "author": "tw-lvr-cli contributors",
-  "homepage": "https://github.com/felixfu824/tw-lvr-cli#readme",
+  "homepage": "https://github.com/felixfu824/taiwan-property-price-cli#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/felixfu824/tw-lvr-cli.git"
+    "url": "git+https://github.com/felixfu824/taiwan-property-price-cli.git"
   },
   "bugs": {
-    "url": "https://github.com/felixfu824/tw-lvr-cli/issues"
+    "url": "https://github.com/felixfu824/taiwan-property-price-cli/issues"
   },
   "keywords": [
     "taiwan",
@@ -22,7 +22,11 @@
     "real-price-registry",
     "lvr",
     "property",
+    "property-price",
     "property-transactions",
+    "taiwan-property",
+    "taiwan-property-price",
+    "taiwan-property-transactions",
     "open-data",
     "cli",
     "library",

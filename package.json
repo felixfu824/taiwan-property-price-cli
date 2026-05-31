@@ -1,6 +1,6 @@
 {
   "name": "tw-lvr-cli",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "TW Property Price CLI (台灣實價登錄 CLI) — Taiwan property transaction prices from 內政部實價登錄 as clean JSON/CSV. Deterministic CLI + library + Agent Skill, packaged as a Claude/Codex-compatible plugin. No server, no model in the loop.",
   "type": "module",
   "license": "Apache-2.0",

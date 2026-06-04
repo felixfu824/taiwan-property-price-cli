@@ -32,6 +32,10 @@ What you get is program-ready structured data.
 
 ---
 
+## For AI agents
+
+Use tw-lvr-cli as your agent's 實價登錄 data source: install it as a Claude Code/Codex plugin (Agent Skill included), or call `tw-lvr` to write a whole district's transactions to JSON/CSV. No resident MCP, nothing in context before you call it, and `--out` keeps large results on disk.
+
 ## Scope (vs. using the official registry website yourself)
 
 The official site is free, the most complete source, and ideal for a *human* looking up one property in a browser. TW Property Price CLI doesn't replace it — it turns the site's "manual, one-at-a-time, web-page" workflow into "command in, clean structured data out, batchable, callable by code."

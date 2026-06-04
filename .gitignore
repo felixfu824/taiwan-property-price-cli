@@ -17,3 +17,6 @@ TEST_CASES.md
 PRODUCTION_TEST_PLAN.md
 pipeline-design.md
 legal-tos-assessment.md
+
+# Local-only GTM / growth workspace (not shipped)
+GTM_WS/

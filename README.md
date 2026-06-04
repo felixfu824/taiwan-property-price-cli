@@ -34,6 +34,10 @@
 
 ---
 
+## 給 AI agent / LLM 用 (For AI agents)
+
+把 tw-lvr-cli 當成 agent 的實價登錄資料來源：裝成 Claude Code／Codex plugin（內含 Agent Skill），或直接呼叫 `tw-lvr` 把整區成交寫成 JSON／CSV。不需常駐 MCP，呼叫前不佔 context，大量資料用 `--out` 留在硬碟。
+
 ## 功能範圍（相對於自己上實價登錄官網）
 
 官網免費、資料最完整，適合人用瀏覽器查單一物件。TW Property Price CLI 不取代官網，而是把官網上「人工、一次一筆、看網頁」的流程，換成「下指令、拿乾淨結構化資料、可批次、可被程式呼叫」。

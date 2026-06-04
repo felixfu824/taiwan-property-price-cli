@@ -1,11 +1,11 @@
 {
   "name": "tw-lvr-cli",
-  "version": "0.1.3",
-  "description": "TW Property Price CLI (台灣實價登錄 CLI) — Taiwan property transaction prices from 內政部實價登錄 as clean JSON/CSV. Deterministic CLI + library + Agent Skill, packaged as a Claude/Codex-compatible plugin. No server, no model in the loop.",
+  "version": "0.1.4",
+  "description": "實價登錄 → 乾淨 JSON／CSV. Taiwan property transaction prices from 內政部實價登錄 as clean JSON/CSV, written to disk and kept out of the LLM context. Deterministic CLI + library + Agent Skill (Claude/Codex plugin). No server, no model in the loop.",
   "type": "module",
   "license": "Apache-2.0",
   "author": "tw-lvr-cli contributors",
-  "homepage": "https://github.com/felixfu824/taiwan-property-price-cli#readme",
+  "homepage": "https://taiwan-property-price.pages.dev",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/felixfu824/taiwan-property-price-cli.git"
@@ -35,7 +35,10 @@
     "claude-plugin",
     "codex-plugin",
     "claude-code",
-    "codex"
+    "codex",
+    "json",
+    "csv",
+    "data-pipeline"
   ],
   "engines": {
     "node": ">=18"

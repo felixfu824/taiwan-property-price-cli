@@ -7,8 +7,8 @@
 > 繁體中文為主要版本 → [README.md](./README.md). Just looking up one building? Use 591 or 樂居 — free, great UIs, already cleaned. TW Property Price CLI fills the other gap: **clean, latest Taiwan property transaction data a program, app, or agent can consume directly.**
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/felixfu824/taiwan-property-price-cli/master/media/readme-demo.gif"
-       alt="TW Property Price CLI demo — a Hsinchu lookup returns clean JSON; a whole Banqiao district writes 8,387 rows to disk, 0 rows in model context"
+  <img src="media/readme-demo.gif"
+       alt="TW Property Price CLI demo — a Hsinchu lookup returns clean JSON; a whole Banqiao district writes 8,482 rows to disk, 0 rows in model context"
        width="100%">
 </p>
 

@@ -58,6 +58,7 @@
   "files": [
     "dist/",
     "skills/",
+    "media/",
     "README.md",
     "LICENSE",
     "NOTICE"

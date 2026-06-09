@@ -7,8 +7,8 @@
 > 只想查一間房？用 591 / 樂居就好——免費、UI 好、已清洗。TW Property Price CLI 補的是另一塊空缺：**能被程式／app／agent 直接吃的乾淨即時實價資料。**
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/felixfu824/taiwan-property-price-cli/master/media/readme-demo.gif"
-       alt="TW Property Price CLI demo：新竹關新路查詢回傳乾淨 JSON；新北板橋整區 8,387 筆寫入磁碟，0 列進入模型 context"
+  <img src="media/readme-demo.gif"
+       alt="TW Property Price CLI demo：新竹關新路查詢回傳乾淨 JSON；新北板橋整區 8,482 筆寫入磁碟，0 列進入模型 context"
        width="100%">
 </p>
 

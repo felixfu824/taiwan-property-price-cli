@@ -3,7 +3,8 @@
  *
  * PURE: no I/O, no network. Parses a Chinese address string, maps city +
  * district to the lvr site's city/town codes, extracts the road/lane portion,
- * and converts western years to ROC. Output feeds Fetch (QueryParams).
+ * and converts western YYYYMM periods to ROC year/month fields. Output feeds
+ * Fetch (QueryParams).
  *
  * Code tables are the AUTHORITATIVE full set for all 22 Taiwan cities/counties
  * (臺澎金馬 included), compiled from the LVR town list captured directly from
@@ -546,23 +547,61 @@ function stripDoorNumber(doorno: string): string {
   return head.replace(/[0-9０-９]+$/, "");
 }
 
-/** Western → ROC year conversion with a validity guard. */
-function rocYears(
+interface ParsedPeriod {
+  year: number;
+  month: number;
+}
+
+interface ResolvedPeriodRange {
+  starty: string;
+  startm: string;
+  endy: string;
+  endm: string;
+}
+
+function parseWesternYearMonth(raw: string): ParsedPeriod | null {
+  if (!/^\d{6}$/.test(raw)) return null;
+  const year = Number.parseInt(raw.slice(0, 4), 10);
+  const month = Number.parseInt(raw.slice(4, 6), 10);
+  if (month < 1 || month > 12) return null;
+  return { year, month };
+}
+
+/** Western YYYYMM → ROC year/month conversion with strict validity guards. */
+function resolvePeriodRange(
   input: QueryInput,
-): { starty: string; endy: string; err?: Result<QueryParams> } {
-  const fromYear = Number.parseInt(input.from, 10);
-  const toYear = Number.parseInt(input.to, 10);
-  if (!Number.isFinite(fromYear) || !Number.isFinite(toYear)) {
+): ResolvedPeriodRange & { err?: Result<QueryParams> } {
+  const from = parseWesternYearMonth(input.from);
+  const to = parseWesternYearMonth(input.to);
+  const empty = { starty: "", startm: "", endy: "", endm: "" };
+  if (!from || !to) {
     return {
-      starty: "",
-      endy: "",
+      ...empty,
       err: {
         code: "ERR_BAD_INPUT",
-        error: `invalid year range: from=${input.from} to=${input.to}`,
+        error: `invalid date range: from=${input.from} to=${input.to}; expected western YYYYMM with month 01-12`,
       },
     };
   }
-  return { starty: String(fromYear - 1911), endy: String(toYear - 1911) };
+
+  const fromKey = from.year * 100 + from.month;
+  const toKey = to.year * 100 + to.month;
+  if (fromKey > toKey) {
+    return {
+      ...empty,
+      err: {
+        code: "ERR_BAD_INPUT",
+        error: `invalid date range: from=${input.from} is after to=${input.to}`,
+      },
+    };
+  }
+
+  return {
+    starty: String(from.year - 1911),
+    startm: String(from.month),
+    endy: String(to.year - 1911),
+    endm: String(to.month),
+  };
 }
 
 function queryType(input: QueryInput): "biz" | "sale" {
@@ -611,7 +650,7 @@ export function resolve(input: QueryInput): Result<QueryParams> {
     if (leadingDistrict) remainder = leadingDistrict[2];
     const townCode = CITYWIDE_ONLY[cityCode];
     const doorno = stripDoorNumber(remainder);
-    const { starty, endy, err } = rocYears(input);
+    const { starty, startm, endy, endm, err } = resolvePeriodRange(input);
     if (err) return err;
     const ptype = input.ptype ?? "1,2";
     const resolvedLabel = doorno ? `${cityMatch.name} ${doorno}` : cityMatch.name;
@@ -621,9 +660,9 @@ export function resolve(input: QueryInput): Result<QueryParams> {
       town: townCode,
       doorno,
       starty,
-      startm: "1",
+      startm,
       endy,
-      endm: "12",
+      endm,
       ptype,
       resolvedLabel,
     };
@@ -650,7 +689,7 @@ export function resolve(input: QueryInput): Result<QueryParams> {
   // doorno = road/lane portion after the district, with door 號 stripped.
   const doorno = stripDoorNumber(districtMatch.rest.trim());
 
-  const { starty, endy, err } = rocYears(input);
+  const { starty, startm, endy, endm, err } = resolvePeriodRange(input);
   if (err) return err;
 
   const ptype = input.ptype ?? "1,2";
@@ -665,9 +704,9 @@ export function resolve(input: QueryInput): Result<QueryParams> {
     town: townCode,
     doorno,
     starty,
-    startm: "1",
+    startm,
     endy,
-    endm: "12",
+    endm,
     ptype,
     resolvedLabel,
   };

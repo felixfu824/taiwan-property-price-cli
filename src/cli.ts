@@ -2,7 +2,7 @@
 /**
  * tw-lvr — CLI for the lvr-pipeline engine.
  *
- *   tw-lvr extract --where "台北市信義區松德路169巷" --from 2024 --to 2026 [--refine]
+ *   tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 202612 [--refine]
  *               [--ptype 1,2] [--community 名稱] [--out data.json|data.csv|folder/] [--pretty]
  *   tw-lvr schema [--format table|json]
  *   tw-lvr --version | --help
@@ -253,7 +253,7 @@ export function schemaTable(
 }
 
 const USAGE =
-  "usage: tw-lvr extract --where <addr> --from <year> --to <year> [--refine] [--ptype 1,2]\n" +
+  "usage: tw-lvr extract --where <addr> --from <YYYYMM> --to <YYYYMM> [--refine] [--ptype 1,2]\n" +
   "                      [--query biz|sale|--presale] [--community <name>] [--top N|--limit N]\n" +
   "                      [--out file|folder/] [--pretty] [--format json|csv]\n" +
   "       tw-lvr glossary [--layer clean|refined|all] [--format table|json]\n" +
@@ -269,7 +269,7 @@ function printHelp(): void {
   lines.push(USAGE);
   lines.push("");
   lines.push("COMMANDS");
-  lines.push("  extract     Fetch building-level transactions for an address/year range.");
+  lines.push("  extract     Fetch building-level transactions for an address/month range.");
   lines.push("  glossary    Explain output fields, origins, and formulas.");
   lines.push("  schema      Alias for glossary, kept for scripts.");
   lines.push("  skill       Show or install the bundled Agent Skill.");
@@ -277,8 +277,8 @@ function printHelp(): void {
   lines.push("");
   lines.push("FLAGS (extract)");
   lines.push("  --where <addr>     Address to search, e.g. \"台北市信義區松德路169巷\" (required).");
-  lines.push("  --from <year>      Start year, WESTERN, e.g. 2024. Query spans Jan of --from (required).");
-  lines.push("  --to <year>        End year, WESTERN, e.g. 2026. Query spans through Dec of --to (required).");
+  lines.push("  --from <YYYYMM>    Start month, WESTERN, e.g. 202401 (required).");
+  lines.push("  --to <YYYYMM>      End month, WESTERN, e.g. 202612 (required).");
   lines.push("  --refine           Add Layer B: car-park-adjusted unit price, exclusion flags, confidence.");
   lines.push("  --ptype <codes>    Property type codes, default 1,2 (房地). 3=土地 4=建物 5=車位.");
   lines.push("  --query <kind>     biz (default, 買賣) or sale (預售屋).");
@@ -298,10 +298,10 @@ function printHelp(): void {
   lines.push("  0 ok/empty · 2 bad input · 3 site changed · 4 network · 5 rate limited · 6 env/browser · 7 partial");
   lines.push("");
   lines.push("EXAMPLES");
-  lines.push("  tw-lvr extract --where \"台北市信義區松德路169巷\" --from 2024 --to 2026 --refine --pretty");
-  lines.push("  tw-lvr extract --where \"台北市大安區\" --from 2024 --to 2026 --community \"敦南琢真\" --out ./out/");
-  lines.push("  tw-lvr extract --where \"新北市板橋區文化路\" --from 2025 --to 2026 --top 20 --format csv --out latest.csv");
-  lines.push("  tw-lvr extract --where \"苗栗縣竹南鎮\" --from 2026 --to 2026 --presale --community \"藏富天下\"");
+  lines.push("  tw-lvr extract --where \"台北市信義區松德路169巷\" --from 202401 --to 202612 --refine --pretty");
+  lines.push("  tw-lvr extract --where \"台北市大安區\" --from 202401 --to 202612 --community \"敦南琢真\" --out ./out/");
+  lines.push("  tw-lvr extract --where \"新北市板橋區文化路\" --from 202501 --to 202612 --top 20 --format csv --out latest.csv");
+  lines.push("  tw-lvr extract --where \"苗栗縣竹南鎮\" --from 202601 --to 202612 --presale --community \"藏富天下\"");
   lines.push("  tw-lvr glossary --layer refined");
   lines.push("  tw-lvr upgrade --agent codex");
   lines.push("  tw-lvr skill install --agent codex");

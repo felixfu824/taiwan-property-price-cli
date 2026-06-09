@@ -29,7 +29,7 @@ writes results straight to disk so a large pull never streams through the model.
 
 ## How to run
 ```
-tw-lvr extract --where "台北市信義區松德路169巷" --from 2024 --to 2026 [--refine] [--ptype 1,2] [--query biz|sale] [--presale] [--top N] [--community <name>] [--out file.json|file.csv|dir/] [--format json|csv] [--pretty]
+tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 202612 [--refine] [--ptype 1,2] [--query biz|sale] [--presale] [--top N] [--community <name>] [--out file.json|file.csv|dir/] [--format json|csv] [--pretty]
 ```
 Also: `tw-lvr glossary` (output fields, origins, formulas), `tw-lvr schema` (alias),
 `tw-lvr upgrade` (CLI + Skill update commands), `tw-lvr skill install --agent codex|claude`,
@@ -51,16 +51,14 @@ Also: `tw-lvr glossary` (output fields, origins, formulas), `tw-lvr schema` (ali
   (`--top N`, or `jq`/`grep`/a follow-up Read on the file). This is the core context-saving move:
   a district-wide pull writes to disk in one command instead of injecting every row into your context.
 - The matched address is echoed to stderr ("resolved: …") — confirm it before trusting results.
-- **Time period (`--from`/`--to`) are WESTERN YEARS** (e.g. `2024`); the query spans January of `--from`
-  through December of `--to`. **If the user gives no period, default to roughly the past 24 months: set
-  `--from` to the current year minus 2 and `--to` to the current year.** (Year granularity means this is a
-  slight superset of 24 months — narrow afterwards if the user wanted an exact window.)
-- **Long spans / dense districts → chunk the year range.** One `extract` fetches the
+- **Time period (`--from`/`--to`) are WESTERN `YYYYMM` months** (e.g. `202401`).
+  **If the user gives no period, default to the current month and the previous 24 months.**
+- **Long spans / dense districts → chunk the month range.** One `extract` fetches the
   WHOLE district for the span (then filters), so a very large response fails with exit
   `4` `[ERR_NETWORK] ... evicted from inspector cache`. Verified ceiling: ~15k rows in
   one call is OK, ~17k fails — dense metros (e.g. 高雄鼓山, 台北信義) run ≈2k rows/yr, so
-  ~7 years is the practical max there. **Default each call to ≤5 years; on ERR_NETWORK,
-  halve the window and retry.** For longer history, split `[--from,--to]` into ≤5-year
+  ~7 years is the practical max there. **Default each call to ≤60 months; on ERR_NETWORK,
+  halve the window and retry.** For longer history, split `[--from,--to]` into ≤60-month
   chunks, run each, concatenate, sort by `txnDateRoc` descending, de-dupe by `detailKey`,
   then apply `--top`/`--community` on the merged set.
 

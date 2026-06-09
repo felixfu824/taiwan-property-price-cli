@@ -61,7 +61,7 @@ If the browser is missing, `tw-lvr` exits with code `6` (`ERR_ENV`) and prints t
 You can also run the package without a global CLI install:
 
 ```bash
-npx -y tw-lvr-cli@latest extract --where "新竹市東區關新路" --from 2024 --to 2026 --top 3 --pretty
+npx -y tw-lvr-cli@latest extract --where "新竹市東區關新路" --from 202401 --to 202612 --top 3 --pretty
 ```
 
 The one-off `npx` form still requires `chromium-headless-shell` to be installed.
@@ -71,7 +71,7 @@ The one-off `npx` form still requires `chromium-headless-shell` to be installed.
 Fetch the three newest transactions for a road:
 
 ```bash
-tw-lvr extract --where "新竹市東區關新路" --from 2024 --to 2026 --top 3 --pretty
+tw-lvr extract --where "新竹市東區關新路" --from 202401 --to 202612 --top 3 --pretty
 ```
 
 Results are sorted newest first. A typical JSON record includes:
@@ -91,19 +91,19 @@ Results are sorted newest first. A typical JSON record includes:
 For more than a handful of rows, write results to disk:
 
 ```bash
-tw-lvr extract --where "新北市板橋區文化路一段" --from 2023 --to 2026 --out transactions.csv
+tw-lvr extract --where "新北市板橋區文化路一段" --from 202301 --to 202612 --out transactions.csv
 ```
 
 Use presale mode with either `--presale` or `--query sale`:
 
 ```bash
-tw-lvr extract --where "苗栗縣竹南鎮" --from 2026 --to 2026 --presale --community "藏富天下" --top 5 --pretty
+tw-lvr extract --where "苗栗縣竹南鎮" --from 202601 --to 202612 --presale --community "藏富天下" --top 5 --pretty
 ```
 
 Add `--refine` when you want analysis-oriented fields such as adjusted unit price, exclusion flags, and confidence:
 
 ```bash
-tw-lvr extract --where "台北市信義區松德路169巷" --from 2024 --to 2026 --refine --pretty
+tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 202612 --refine --pretty
 ```
 
 ## Commands and Flags
@@ -113,7 +113,7 @@ tw-lvr extract --where "台北市信義區松德路169巷" --from 2024 --to 2026
 `extract` is the main command.
 
 ```bash
-tw-lvr extract --where <address> --from <YYYY> --to <YYYY>
+tw-lvr extract --where <address> --from <YYYYMM> --to <YYYYMM>
                [--refine] [--ptype 1,2] [--query biz|sale | --presale]
                [--top N | --limit N] [--community <name>]
                [--out <file|dir/>] [--format json|csv] [--pretty]
@@ -124,8 +124,8 @@ Flags:
 | Flag | Meaning |
 |---|---|
 | `--where <address>` | Address, road, district, building area, or locality to search. Required. |
-| `--from <YYYY>` | Start year in western calendar. Required. The query starts in January of this year. |
-| `--to <YYYY>` | End year in western calendar. Required. The query runs through December of this year. |
+| `--from <YYYYMM>` | Start month in western calendar. Required. Example: `202401`. |
+| `--to <YYYYMM>` | End month in western calendar. Required. Example: `202612`. |
 | `--refine` | Adds Layer B fields: adjusted/comparable unit price, exclusion flags, parking provenance, and confidence. |
 | `--ptype <codes>` | Property type codes. Default is `1,2` (`房地`). Common site codes include `3` land, `4` building, and `5` parking. |
 | `--query biz|sale` | Query type. `biz` is the default existing-home sale tab; `sale` is presale. |
@@ -133,7 +133,7 @@ Flags:
 | `--community <name>` | Post-filters returned rows where `building` includes the community/building name. |
 | `--top N` | Keeps only the N newest transactions after sorting. |
 | `--limit N` | Alias for `--top N`. |
-| `--out <file|dir/>` | Writes output to a file or directory. If a directory is passed, the CLI auto-generates a filename from the resolved query label and year range. |
+| `--out <file|dir/>` | Writes output to a file or directory. If a directory is passed, the CLI auto-generates a filename from the resolved query label and month range. |
 | `--format json|csv` | Output format. Defaults to JSON; inferred as CSV if `--out` ends in `.csv`. |
 | `--pretty` | Pretty-prints JSON with indentation. |
 
@@ -142,8 +142,8 @@ Notes:
 - Output is always sorted newest first by `txnDateRoc`.
 - The resolved query label is printed to stderr as `resolved: ...`.
 - Status and row counts are printed to stderr; data is printed to stdout unless `--out` is used.
-- Large or dense queries should be split into year chunks. A practical default is five years or less per call.
-- If an oversized response fails with `ERR_NETWORK`, retry with a smaller year window.
+- Large or dense queries should be split into month-range chunks. A practical default is 60 months or less per call.
+- If an oversized response fails with `ERR_NETWORK`, retry with a smaller month window.
 
 ### `glossary` and `schema`
 
@@ -281,7 +281,7 @@ These fields are added only with `--refine`.
 | Code | Outcome | Meaning |
 |---:|---|---|
 | `0` | `OK` / `OK_EMPTY` | Successful query, including valid queries with zero matches. |
-| `2` | `ERR_BAD_INPUT` | Invalid address, year range, query type, output format, or CLI usage. |
+| `2` | `ERR_BAD_INPUT` | Invalid address, date range, query type, output format, or CLI usage. |
 | `3` | `ERR_SITE_CHANGED` | Source site contract changed; maintainer investigation required. |
 | `4` | `ERR_NETWORK` | Network failure or oversized response. Retry, then reduce the query window if needed. |
 | `5` | `ERR_RATE_LIMITED` | Source site throttled or blocked the request. Back off before retrying. |
@@ -296,12 +296,12 @@ Resolve -> Fetch -> Normalize -> Refine
 
 ### Resolve
 
-Parses a human-readable address and western year range into the query parameters expected by the public registry site.
+Parses a human-readable address and western month range into the query parameters expected by the public registry site.
 
 Input:
 
 - `where`: address or locality string, such as `台北市信義區松德路169巷`.
-- `from` / `to`: western years, such as `2024` and `2026`.
+- `from` / `to`: western year-month strings in `YYYYMM` format, such as `202401` and `202612`.
 - `ptype`: property type codes, default `1,2`.
 - `queryType`: `biz` or `sale`.
 
@@ -347,8 +347,8 @@ import type { CleanRawRecord, RefinedRecord, QueryInput, Result } from "tw-lvr-c
 
 const input: QueryInput = {
   where: "新竹市東區關新路",
-  from: "2024",
-  to: "2026",
+  from: "202401",
+  to: "202612",
 };
 
 const raw: Result<CleanRawRecord[]> = await extract(input);
@@ -448,7 +448,7 @@ Agents should treat `tw-lvr` as an external data tool:
 Recommended agent pattern:
 
 ```bash
-tw-lvr extract --where "新北市板橋區文化路一段" --from 2023 --to 2026 --out tmp/banqiao.json
+tw-lvr extract --where "新北市板橋區文化路一段" --from 202301 --to 202612 --out tmp/banqiao.json
 ```
 
 Then inspect with normal file tools:
@@ -460,12 +460,12 @@ jq '.[0:10] | map({building, address, txnDateRoc, totalPriceWan, siteAdjUnitPric
 For broad or dense searches:
 
 - Use `--out`.
-- Query at most five years per call by default.
-- On `ERR_NETWORK`, halve the year window and retry.
+- Query at most 60 months per call by default.
+- On `ERR_NETWORK`, halve the month window and retry.
 - Concatenate chunked outputs, sort by `txnDateRoc` descending, and de-duplicate by `detailKey` if building a merged history.
 - Use `--top N`, `jq`, or a follow-up file read to keep context small.
 
-If the user gives no period, a practical agent default is the current year and the previous two years. Because the CLI accepts whole years, this is an approximate 24-month window and may include extra months.
+If the user gives no period, a practical agent default is the current month and the previous 24 months, encoded as western `YYYYMM`.
 
 Agents should verify stderr's `resolved: ...` line before relying on results. If returned addresses do not match the intended locality, treat the output as a query-resolution issue, not market evidence.
 
@@ -530,8 +530,8 @@ Try:
 
 - Remove exact floor or door-number precision.
 - Search by road, lane, district, or city before narrowing.
-- Widen the year range.
-- Confirm that `--from` and `--to` are western years.
+- Widen the month range.
+- Confirm that `--from` and `--to` are western `YYYYMM` values.
 - Check `--ptype`; the default is `1,2`.
 - Use `--presale` or `--query sale` for presale units.
 - For community names, use a broad road or district query plus `--community "<name>"`.
@@ -539,7 +539,7 @@ Try:
 Debug with a small file:
 
 ```bash
-tw-lvr extract --where "<same query>" --from <YYYY> --to <YYYY> --top 10 --out tmp/lvr-debug.json --pretty
+tw-lvr extract --where "<same query>" --from <YYYYMM> --to <YYYYMM> --top 10 --out tmp/lvr-debug.json --pretty
 ```
 
 Inspect `address`, `building`, `buildingUnit`, `txnDateRoc`, `totalPriceWan`, `siteAdjUnitPrice`, and `siteUnitPriceFormula`.
@@ -554,8 +554,8 @@ Symptom:
 
 Fix:
 
-- Split the query into smaller year windows.
-- Use five years or less per call by default.
+- Split the query into smaller month windows.
+- Use 60 months or less per call by default.
 - For very dense districts, reduce further.
 
 ### Rate limited
@@ -609,4 +609,3 @@ Include:
 - Operating system.
 - Whether `npx playwright install chromium-headless-shell` has been run.
 - Whether the command ran inside an agent sandbox or a normal terminal.
-

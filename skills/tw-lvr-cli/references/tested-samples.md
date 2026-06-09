@@ -9,10 +9,10 @@ schema shape, address/locality prefix, sort order, and file creation.
 ```bash
 tw-lvr --help
 tw-lvr schema --format json
-tw-lvr extract --where "台北市信義區松德路169巷" --from 2024 --to 2026 --top 3 --pretty
-tw-lvr extract --where "台北市信義區松德路169巷" --from 2024 --to 2026 --top 3 --format csv
-tw-lvr extract --where "台北市信義區松德路169巷" --from 2024 --to 2026 --top 3 --out samples/songde.json
-tw-lvr extract --where "苗栗縣竹南鎮" --from 2026 --to 2026 --presale --community "藏富天下" --top 5 --out samples/zhunan-presale.json
+tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 202612 --top 3 --pretty
+tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 202612 --top 3 --format csv
+tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 202612 --top 3 --out samples/songde.json
+tw-lvr extract --where "苗栗縣竹南鎮" --from 202601 --to 202612 --presale --community "藏富天下" --top 5 --out samples/zhunan-presale.json
 ```
 
 Expected: help and schema exit 0; JSON parses; CSV has escaped scalar fields and
@@ -37,7 +37,7 @@ Use `--top 5 --out <file>` for large/coarse queries.
 Example:
 
 ```bash
-tw-lvr extract --where "新北市板橋區文化路一段" --from 2024 --to 2026 --top 5 --out samples/banqiao.json --pretty
+tw-lvr extract --where "新北市板橋區文化路一段" --from 202401 --to 202612 --top 5 --out samples/banqiao.json --pretty
 ```
 
 ## Input Quirk Samples
@@ -60,8 +60,8 @@ These are useful when checking address parsing.
 These should fail clearly with `ERR_BAD_INPUT` and exit code 2.
 
 ```bash
-tw-lvr extract --where "信義路五段" --from 2024 --to 2026
-tw-lvr extract --where "臺北市" --from 2024 --to 2026
-tw-lvr extract --where "臺北市不存在區信義路五段" --from 2024 --to 2026
-tw-lvr extract --where "臺北市信義區信義路五段" --from abc --to 2026
+tw-lvr extract --where "信義路五段" --from 202401 --to 202612
+tw-lvr extract --where "臺北市" --from 202401 --to 202612
+tw-lvr extract --where "臺北市不存在區信義路五段" --from 202401 --to 202612
+tw-lvr extract --where "臺北市信義區信義路五段" --from abc --to 202612
 ```

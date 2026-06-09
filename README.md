@@ -58,7 +58,7 @@
 查新竹科學園區一帶（關埔重劃區）關新路最近 3 筆成交：
 
 ```bash
-tw-lvr extract --where "新竹市東區關新路" --from 2024 --to 2026 --top 3 --pretty
+tw-lvr extract --where "新竹市東區關新路" --from 202401 --to 202612 --top 3 --pretty
 ```
 
 `--top 3`：只回最近的 3 筆，**最新一筆永遠排在最上面**（想看全部就拿掉這個參數）。輸出（欄位節錄；完整欄位見 `tw-lvr glossary`）：
@@ -129,9 +129,9 @@ npx playwright install chromium-headless-shell    # 必裝——唯一的非 JS 
 **2. 指令**
 
 ```bash
-tw-lvr extract --where "台北市信義區松德路169巷" --from 2024 --to 2026 --refine --pretty
-tw-lvr extract --where "新北市板橋區文化路一段" --from 2023 --to 2026 --out transactions.csv
-tw-lvr extract --where "苗栗縣竹南鎮" --from 2026 --to 2026 --presale --community "藏富天下"
+tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 202612 --refine --pretty
+tw-lvr extract --where "新北市板橋區文化路一段" --from 202301 --to 202612 --out transactions.csv
+tw-lvr extract --where "苗栗縣竹南鎮" --from 202601 --to 202612 --presale --community "藏富天下"
 
 tw-lvr glossary       # 解釋每個輸出欄位、來源與公式
 tw-lvr --help / --version
@@ -139,14 +139,14 @@ tw-lvr --help / --version
 
 完整參數：
 ```
-tw-lvr extract --where <地址> --from <YYYY> --to <YYYY>
+tw-lvr extract --where <地址> --from <YYYYMM> --to <YYYYMM>
                [--refine] [--ptype 1,2] [--query biz|sale | --presale]
                [--top N | --limit N] [--community <社區名>]
                [--out <檔案|資料夾>] [--format json|csv] [--pretty]
 ```
 - 預設 `--query biz`（成屋買賣）；`--presale` 切到預售屋。
 - **讓資料不進 context**：超過幾列就用 `--out` 寫檔，再讀回需要的片段。
-- 大範圍／長年期請分段（每次 ≤5 年）；單次回應過大會以 `ERR_NETWORK` 失敗。
+- 大範圍／長期間請分段（每次 ≤60 個月）；單次回應過大會以 `ERR_NETWORK` 失敗。
 - exit code：`0` 成功/無資料 · `2` 輸入錯誤 · `3` 網站改版 · `4` 網路 · `5` 被限流 · `6` 環境/瀏覽器 · `7` 部分成功。
 - 從原始碼開發：`bun install && bun run build`，再用 `node dist/cli.js extract ...`。
 - 想程式化呼叫？同一顆引擎可直接 `import`（`extract` / `extractRefined`，型別見 `src/index.ts`）。

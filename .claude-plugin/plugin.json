@@ -1,7 +1,7 @@
 {
   "name": "tw-lvr-cli",
   "description": "實價登錄 → 乾淨 JSON／CSV. Taiwan property transaction prices from 內政部實價登錄 as clean JSON/CSV, written to disk and kept out of the LLM context. Deterministic CLI + library + Agent Skill (Claude/Codex plugin). No server, no model in the loop. Requires the chrome-headless-shell browser binary (npx playwright install chromium-headless-shell).",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "author": {
     "name": "tw-lvr-cli contributors"
   },

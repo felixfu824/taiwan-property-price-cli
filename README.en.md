@@ -56,7 +56,7 @@ The official site is free, the most complete source, and ideal for a *human* loo
 Latest 3 transactions on 關新路 in the Hsinchu Science Park area (關埔 redevelopment zone):
 
 ```bash
-tw-lvr extract --where "新竹市東區關新路" --from 2024 --to 2026 --top 3 --pretty
+tw-lvr extract --where "新竹市東區關新路" --from 202401 --to 202612 --top 3 --pretty
 ```
 
 `--top 3`: return only the 3 most recent rows, **newest always first** (drop it to get everything). Output (fields abbreviated; full set via `tw-lvr glossary`):
@@ -127,9 +127,9 @@ npx playwright install chromium-headless-shell   # REQUIRED — the one non-JS d
 **2. Commands**
 
 ```bash
-tw-lvr extract --where "台北市信義區松德路169巷" --from 2024 --to 2026 --refine --pretty
-tw-lvr extract --where "新北市板橋區文化路一段" --from 2023 --to 2026 --out transactions.csv
-tw-lvr extract --where "苗栗縣竹南鎮" --from 2026 --to 2026 --presale --community "藏富天下"
+tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 202612 --refine --pretty
+tw-lvr extract --where "新北市板橋區文化路一段" --from 202301 --to 202612 --out transactions.csv
+tw-lvr extract --where "苗栗縣竹南鎮" --from 202601 --to 202612 --presale --community "藏富天下"
 
 tw-lvr glossary       # explain every output field, its origin, and formula
 tw-lvr --help / --version
@@ -137,14 +137,14 @@ tw-lvr --help / --version
 
 Full surface:
 ```
-tw-lvr extract --where <address> --from <YYYY> --to <YYYY>
+tw-lvr extract --where <address> --from <YYYYMM> --to <YYYYMM>
                [--refine] [--ptype 1,2] [--query biz|sale | --presale]
                [--top N | --limit N] [--community <name>]
                [--out <file|dir>] [--format json|csv] [--pretty]
 ```
 - `--query biz` (existing-home sale) is the default; `--presale` switches to the pre-sale tab.
 - **Keep results off-context:** beyond a handful of rows, use `--out` and read back only the slice you need.
-- For long spans / dense districts, chunk the year range (≤5 years per call); one oversized response fails with `ERR_NETWORK`.
+- For long spans / dense districts, chunk the month range (≤60 months per call); one oversized response fails with `ERR_NETWORK`.
 - Exit codes: `0` ok/empty · `2` bad input · `3` site changed · `4` network · `5` rate limited · `6` environment/browser · `7` partial.
 - From source: `bun install && bun run build`, then `node dist/cli.js extract ...`.
 - Need programmatic access? The same engine can be `import`ed directly (`extract` / `extractRefined`, types in `src/index.ts`).
@@ -156,7 +156,7 @@ tw-lvr extract --where <address> --from <YYYY> --to <YYYY>
 ```
 Resolve → Fetch → Normalize → Refine
 ```
-- **Resolve:** parse the human address + years into the government site's query params.
+- **Resolve:** parse the human address + month range into the government site's query params.
 - **Fetch:** launch a transient headless Chromium and capture the raw `QueryPrice` transaction rows.
 - **Normalize:** turn raw government rows into clean, typed `CleanRawRecord`s — unified field names, units (坪/萬元), and ROC dates, with no judgement applied.
 - **Refine** (only with `--refine`): adds the site-displayed adjusted unit price, exclusion flags (親友/純車位/非住宅), and `confidence` on top of Clean Raw.

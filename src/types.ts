@@ -35,9 +35,9 @@ export interface Result<T> {
 export interface QueryInput {
   /** e.g. "台北市信義區松德路169巷" (address) */
   where: string;
-  /** start year, western, e.g. "2024" (Resolve converts to ROC) */
+  /** start period, western YYYYMM, e.g. "202401" (Resolve converts to ROC year/month) */
   from: string;
-  /** end year, western, e.g. "2026" */
+  /** end period, western YYYYMM, e.g. "202612" */
   to: string;
   /** property type codes, default "1,2" (房地). 3=土地 4=建物 5=車位 */
   ptype?: string;

@@ -10,7 +10,6 @@ value-prop-1-pager.md
 # Internal / dev-only — kept local, NOT shipped to the public repo or npm
 .claude/
 test/
-docs/
 CLAUDE.md
 AGENTS.md
 TEST_CASES.md

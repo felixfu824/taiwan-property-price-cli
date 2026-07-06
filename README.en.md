@@ -26,7 +26,7 @@ An agent / app / script can pull **thousands to tens of thousands of transaction
 Nothing loads into context until you invoke it; the Skill keeps only its short name + description resident, loading the body on use. `import` it straight into a web backend, CI, or cron.
 
 **③ Performance & reliability: deterministic and repeatable**
-The same query always returns the same result; **~2s per query** (CLI end-to-end, startup included). The logic lives in code, not in a model driving a browser in the loop (slow, unstable, token-hungry).
+The same query always returns the same result; **~2–3s per query** (CLI end-to-end, startup included). The logic lives in code, not in a model driving a browser in the loop (slow, unstable, token-hungry).
 
 **④ Output: clean, structured JSON / CSV**
 What you get is program-ready structured data.

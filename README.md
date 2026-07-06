@@ -196,6 +196,6 @@ Resolve → Fetch → Normalize → Refine
 
 ## <a id="english"></a>English
 
-**TW Property Price CLI** (`tw-lvr-cli` on npm) is a **low-context-footprint CLI for Taiwan property transaction prices from 內政部實價登錄, packaged with a portable Agent Skill (`SKILL.md`) as a Claude/Codex-compatible plugin** — it turns the latest building-level transactions into clean JSON/CSV that stays on disk, out of the model's context, so an agent can pull a whole district without bloating its context. It also works as an importable TypeScript library + CLI — no server to host. Deterministic by design — the same query always returns the same result, fast (~2s/query).
+**TW Property Price CLI** (`tw-lvr-cli` on npm) is a **low-context-footprint CLI for Taiwan property transaction prices from 內政部實價登錄, packaged with a portable Agent Skill (`SKILL.md`) as a Claude/Codex-compatible plugin** — it turns the latest building-level transactions into clean JSON/CSV that stays on disk, out of the model's context, so an agent can pull a whole district without bloating its context. It also works as an importable TypeScript library + CLI — no server to host. Deterministic by design — the same query always returns the same result, fast (~2–3s/query).
 
 → **Full English README: [README.en.md](./README.en.md)**

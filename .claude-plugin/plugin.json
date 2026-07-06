@@ -1,6 +1,6 @@
 {
   "name": "tw-lvr-cli",
-  "description": "實價登錄 → 乾淨 JSON／CSV. Taiwan property transaction prices from 內政部實價登錄 as clean JSON/CSV, written to disk and kept out of the LLM context. Deterministic CLI + library + Agent Skill (Claude/Codex plugin). No server, no model in the loop. Requires the chrome-headless-shell browser binary (npx playwright install chromium-headless-shell).",
+  "description": "實價登錄 → 乾淨 JSON／CSV. Taiwan property sale prices AND transacted rents (成交價與成交租金) from 內政部實價登錄 as clean JSON/CSV, written to disk and kept out of the LLM context. Deterministic CLI + library + Agent Skill (Claude/Codex plugin). No server, no model in the loop. Requires the chrome-headless-shell browser binary (npx playwright install chromium-headless-shell).",
   "version": "0.2.0",
   "author": {
     "name": "tw-lvr-cli contributors"
@@ -22,6 +22,12 @@
     "taiwan-property",
     "taiwan-property-price",
     "taiwan-property-transactions",
+    "rent",
+    "rental",
+    "rental-price",
+    "taiwan-rent",
+    "租金",
+    "租屋",
     "open-data",
     "cli",
     "library",

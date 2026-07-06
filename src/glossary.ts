@@ -6,7 +6,7 @@
  * `origin` tells users how this CLI output value is produced.
  */
 
-export type FieldLayer = "clean" | "refined";
+export type FieldLayer = "clean" | "refined" | "rent-clean" | "rent-refined";
 export type FieldOrigin = "site" | "normalized" | "parsed" | "computed" | "inferred" | "metadata";
 
 export interface GlossaryEntry {
@@ -408,6 +408,48 @@ export const GLOSSARY: GlossaryEntry[] = [
     origin: "inferred",
     official: false,
   },
+
+  // ── RENT (租賃) — Clean Rent Record (--rent). Faithful to source. ──────────
+  { field: "building", label: "社區名 (community)", unit: "", definition: "Community name from rent `bn`; empty if none.", layer: "rent-clean", origin: "site", official: false },
+  { field: "address", label: "地址 (address)", unit: "", definition: "Lease address, half-width digits; land rows carry 地號.", formula: "Parsed from raw `a` (human side after '#').", layer: "rent-clean", origin: "parsed", official: false },
+  { field: "addrNum", label: "門牌號 (door number)", unit: "", definition: "Door number only; '' for land 地號 rows.", formula: "Digits immediately before 號 in the address.", layer: "rent-clean", origin: "parsed", official: false },
+  { field: "txnDate", label: "簽約年月 (lease month)", unit: "", definition: "Contract month, western YYYY-MM.", formula: "ROC `e` + 1911.", layer: "rent-clean", origin: "normalized", official: true },
+  { field: "txnDateRoc", label: "簽約日 (ROC date)", unit: "", definition: "Raw ROC contract date, e.g. 112/08/01.", layer: "rent-clean", origin: "site", official: true },
+  { field: "monthlyRentTwd", label: "月租金 (monthly rent)", unit: "TWD/月", definition: "Total monthly rent (租金總額), parking still inside. NOTE: 元, not 萬.", formula: "Raw `tp`, comma-stripped.", layer: "rent-clean", origin: "site", official: true },
+  { field: "unitRentTwdPing", label: "單價 (unit rent)", unit: "TWD/坪/月", definition: "Site-reported rent per 坪 per month; falls back to raw when the site omits it. HEADLINE field for residential rent comps (median over non-excluded rows; ≈ adjUnitRentTwdPing for most residential leases).", formula: "Raw `p`; else 月租金/面積.", layer: "rent-clean", origin: "site", official: true },
+  { field: "unitRentFormula", label: "單價公式 (unit-rent formula)", unit: "", definition: "The site's basis for unitRentTwdPing.", formula: "Raw `msg`, e.g. 總價/總面積.", layer: "rent-clean", origin: "site", official: true },
+  { field: "rawUnitRentTwdPing", label: "原始單價 (raw unit rent)", unit: "TWD/坪/月", definition: "True raw rent per 坪 (parking still inside).", formula: "月租金 / 面積.", layer: "rent-clean", origin: "computed", official: false },
+  { field: "areaPing", label: "面積 (area)", unit: "坪", definition: "Leased floor area in 坪.", formula: "Raw `s`.", layer: "rent-clean", origin: "site", official: true },
+  { field: "areaM2", label: "面積 (area)", unit: "m²", definition: "Leased area in square metres.", formula: "面積(坪) × 3.30579.", layer: "rent-clean", origin: "computed", official: false },
+  { field: "parkRentTwd", label: "車位租金 (parking rent)", unit: "TWD/月", definition: "Separately reported car-park rent; 0 if none/bundled.", formula: "Raw `cp`.", layer: "rent-clean", origin: "site", official: true },
+  { field: "rentTarget", label: "租賃標的 (lease target)", unit: "", definition: "Old form (簽約 ≤112/08): 建物 / 房地(土地+建物)(+車位) / 車位 / 土地. New form (≥112/09): 租賃房屋 / 租賃房屋+車位.", formula: "Raw `t`.", layer: "rent-clean", origin: "site", official: true },
+  { field: "buildingType", label: "建物型態 (building type)", unit: "", definition: "住宅大樓/華廈/公寓/店面/套房/… ; '' for land.", formula: "Raw `b`.", layer: "rent-clean", origin: "site", official: true },
+  { field: "mainUse", label: "主要用途 (main use)", unit: "", definition: "住家用/商業用/…", formula: "Raw `pu`.", layer: "rent-clean", origin: "site", official: true },
+  { field: "useClass", label: "用途類別/使用分區 (zoning class)", unit: "", definition: "住 / 商 / 其他 — the site's zoning-derived filter bucket, NOT the lease's actual use (信義計畫區-style 特定專用區 luxury towers land in 其他). Never filter residential on this; use mainUse via `excluded`. Empty on ~94% of new-form rows (簽約 ≥112/09) — effectively an old-form-only field.", formula: "Raw `AA11`.", layer: "rent-clean", origin: "site", official: true },
+  { field: "layout", label: "格局 (layout)", unit: "", definition: "Room layout, e.g. 2房2廳2衛.", formula: "Raw `v`.", layer: "rent-clean", origin: "site", official: true },
+  { field: "floor", label: "樓層 (floor)", unit: "", definition: "Floor / total floors, e.g. 八層/九層.", formula: "Raw `f`.", layer: "rent-clean", origin: "site", official: true },
+  { field: "hasMgmtOrg", label: "有無管理組織 (mgmt org)", unit: "boolean", definition: "Whether the building has a management organisation. CONFOUND WARNING for premium analysis: mgmt-org/elevator strongly correlate with building age and unit size, and small old units run HIGHER per-坪 — a naive with/without cut can show a reversed 'premium'. Control for age and area (or compare within rentKind + size bands) first.", formula: "Raw `m` === 有.", layer: "rent-clean", origin: "normalized", official: true },
+  { field: "hasFurniture", label: "有無附傢俱 (furniture)", unit: "boolean", definition: "Whether the lease includes furniture. Era-consistent: old form reports a flag, new form lists 傢俱 among equipment.", formula: "Raw `fn` === 有 (old form), or 傢俱 in the `fn` equipment list (new form).", layer: "rent-clean", origin: "normalized", official: true },
+  { field: "hasElevator", label: "有無電梯 (elevator)", unit: "boolean|null", definition: "Whether the building has an elevator. New-form rows (簽約 ≥112/09) only; null = unreported (all old-form rows). Same confound warning as hasMgmtOrg: correlates with age/size — control before quoting an elevator premium.", formula: "Raw `el` (有→true, 無→false, ''→null).", layer: "rent-clean", origin: "normalized", official: true },
+  { field: "equipment", label: "附屬設備 (equipment)", unit: "", definition: "Comma list of included equipment (冷氣、熱水器、洗衣機、傢俱…). New-form rows only; '' on old-form rows.", formula: "Raw `fn` when it is a list (new form).", layer: "rent-clean", origin: "site", official: true },
+  { field: "rentalType", label: "出租型態 (rental type)", unit: "", definition: "Reported 出租型態 — one of: 整戶出租, 分層出租, 獨立套房, 分租套房, 分租雅房; '' when unreported (all old-form rows, ~15% of new-form). The authoritative segmentation field when present; rentKind is the era-stable coarse rollup.", formula: "Raw `rtype`.", layer: "rent-clean", origin: "site", official: true },
+  { field: "rentalService", label: "租賃住宅服務 (rental service)", unit: "", definition: "Rental-service-business involvement — one of: 一般轉租, 一般代管, 一般包租, 社會住宅代管, 社會住宅包租轉租; '' = none. 社會住宅* leases are SUBSIDIZED social housing (below-market rent) — segment them out for market-rate comps. NOTE this cut OVERLAPS rentKind=套房 (a subsidized lease can be a studio/room); for MECE segment shares peel off 社會住宅* first, then 套房 from the remainder. ERA WARNING: essentially unlabeled on pre-2023-09 (old-form) rows — you cannot strip subsidized leases from a 2022-2023H1 baseline, so cross-seam 'market rent' trends overstate the rise; prefer within-era trends.", formula: "Raw `rserviec` (sic, site key).", layer: "rent-clean", origin: "site", official: true },
+  { field: "buildingAgeYears", label: "屋齡 (building age)", unit: "年", definition: "Building age in years from raw `g`; 0 frequently denotes 'unreported', null when the field is blank.", formula: "Raw `g` (inferred field; treat 0 with care).", layer: "rent-clean", origin: "inferred", official: false },
+  { field: "rentPeriod", label: "租賃期間 (lease period)", unit: "", definition: "ROC start~end, e.g. 1150505~1200504; '' when unreported. ~100% filled on new-form rows (簽約 ≥112/09), ~0% on old-form.", formula: "Raw `rperiod`.", layer: "rent-clean", origin: "site", official: true },
+  { field: "note", label: "備註 (note)", unit: "", definition: "Remarks; exclusion signals (親友/含車位/含管理費…) live here.", formula: "Raw `note`.", layer: "rent-clean", origin: "site", official: true },
+  { field: "lat", label: "緯度 (lat)", unit: "°", definition: "Latitude.", layer: "rent-clean", origin: "site", official: false },
+  { field: "lon", label: "經度 (lon)", unit: "°", definition: "Longitude.", layer: "rent-clean", origin: "site", official: false },
+  { field: "detailKey", label: "明細鍵 (detail key)", unit: "", definition: "Opaque key for an optional per-record detail fetch.", formula: "Raw `sq`.", layer: "rent-clean", origin: "site", official: false },
+
+  // ── RENT (租賃) — Refined Rent Record (--rent --refine). ───────────────────
+  { field: "netRentTwd", label: "淨月租金 (net rent)", unit: "TWD/月", definition: "Monthly rent minus separately reported car-park rent.", formula: "月租金 − 車位租金 (when reported separately).", layer: "rent-refined", origin: "computed", official: false },
+  { field: "netAreaPing", label: "淨面積 (net area)", unit: "坪", definition: "Area net of parking; equals areaPing (parking area is never reported for rent).", formula: "= areaPing (parking area unreported for rent).", layer: "rent-refined", origin: "computed", official: false },
+  { field: "adjUnitRentTwdPing", label: "調整後單價 (adj unit rent)", unit: "TWD/坪/月", definition: "Corrected rent per 坪; recomputed from net rent when a car-park rent was subtracted.", formula: "site `p`, else netRent/area.", layer: "rent-refined", origin: "computed", official: false },
+  { field: "rentKind", label: "出租型態(概略) (rent kind)", unit: "", definition: "Coarse 出租型態 — exactly one of: 整棟/獨立, 套房, 分層/其他, 車位, 土地. Uses reported rentalType when present (獨立套房/分租套房/分租雅房 → 套房; 整戶出租/分層出租 → 分層/其他 — NOTE 整戶出租 means a whole UNIT/flat, so it lands in 分層/其他; 整棟/獨立 is reserved for whole-building/detached 透天/農舍), else proxied from 標的+建物型態 (old-form rows). Segment 套房 out before taking district medians (different market); use rentalType for exact 型態.", formula: "From rentalType, else 標的 + 建物型態.", layer: "rent-refined", origin: "inferred", official: false },
+  { field: "excluded", label: "排除 (excluded)", unit: "boolean", definition: "Flagged out of residential comps (never dropped).", formula: "親友 / 純車位 / 非住宅 (主要用途 lacks 住, or commercial 建物型態: 店面/辦公商業/廠辦/工廠/倉庫).", layer: "rent-refined", origin: "inferred", official: false },
+  { field: "excludeReason", label: "排除原因 (exclude reason)", unit: "", definition: "Reason a lease was flagged out of comps. 非住宅 covers both non-住 主要用途 and commercial 建物型態.", formula: "親友交易 | 純車位 | 非住宅 | ''.", layer: "rent-refined", origin: "inferred", official: false },
+  { field: "parkRentIncluded", label: "車位租金含於總額 (park rent bundled)", unit: "boolean", definition: "Parking present but its rent is bundled into the total.", formula: "標的 has 車位, 標的 ≠ 車位, 車位租金 = 0.", layer: "rent-refined", origin: "inferred", official: false },
+  { field: "confidence", label: "信心度 (confidence)", unit: "", definition: "Rollup confidence; degrades for exclusions, bundled parking, and inferred age.", formula: "high | medium | low.", layer: "rent-refined", origin: "inferred", official: false },
 ];
 
 /** All clean-layer field names, in declaration order. */

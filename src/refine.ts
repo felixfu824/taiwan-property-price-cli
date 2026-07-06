@@ -20,6 +20,9 @@ import type {
   ParkingRefSource,
   ParkPriceSource,
   Confidence,
+  CleanRentRecord,
+  RefinedRentRecord,
+  RentKind,
 } from "./types.js";
 
 /** 1 坪 = 3.30579 m² (from skill "Unit Conversion"). */
@@ -84,6 +87,10 @@ function matchCurated(
 
 const KINSHIP_RE = /親友|員工|特殊關係|共有人/;
 const PRESALE_RE = /預售/;
+// Rent: commercial building types that must not enter residential comps even
+// when 主要用途 is (mis-)registered as 住家用 — observed live: a NT$330k/mo
+// 店面 with mainUse "住家用" survived the mainUse-only check.
+const COMMERCIAL_BTYPE_RE = /店面|店舖|辦公商業|廠辦|工廠|倉庫/;
 
 /**
  * Lower a confidence level by one step, never below "low".
@@ -309,6 +316,133 @@ function refineOne(
     parkPriceSource,
     parkAreaUnreported,
     parkingRefSource,
+    confidence,
+  };
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// RENTAL refine (Layer B for 租賃).
+//
+// Rent has no car-park UNIT-PRICE moat (the sale correctness engine), so this
+// is deliberately light: subtract a separately-reported 車位租金, flag the
+// standard exclusions, tag a COARSE 出租型態 proxy (full 出租型態 is not in the
+// list JSON — see docs/rent-schema-notes.md), and roll up a confidence.
+// PURE. Never drops a record.
+// ═════════════════════════════════════════════════════════════════════════
+
+/** Coarse 出租型態. New-form rows (簽約 ≥112/09) report it (`rentalType`) —
+ *  trust that: room leases (獨立套房/分租套房/分租雅房) → 套房 even when the
+ *  building is a 公寓/透天; whole-unit (整戶出租/分層出租) → 分層/其他. Old-form
+ *  rows fall back to the 標的+建物型態 proxy. Exact 型態 stays in rentalType. */
+function classifyRentKind(
+  rentTarget: string,
+  buildingType: string,
+  rentalType: string,
+): RentKind {
+  if (rentTarget === "土地") return "土地";
+  if (rentTarget === "車位") return "車位";
+  if (rentalType.includes("套房") || rentalType.includes("雅房")) return "套房";
+  if (rentalType === "整戶出租" || rentalType === "分層出租") return "分層/其他";
+  if (buildingType.includes("套房")) return "套房";
+  if (buildingType.includes("透天") || buildingType.includes("農舍")) return "整棟/獨立";
+  return "分層/其他";
+}
+
+export function refineRent(
+  records: CleanRentRecord[],
+): Result<RefinedRentRecord[]> {
+  let failed = 0;
+  const out: RefinedRentRecord[] = records.map((r): RefinedRentRecord => {
+    try {
+      return refineRentOne(r);
+    } catch (e) {
+      failed++;
+      const msg = e instanceof Error ? e.message : String(e);
+      return {
+        ...r,
+        netRentTwd: r.monthlyRentTwd,
+        netAreaPing: r.areaPing,
+        adjUnitRentTwdPing: r.unitRentTwdPing || r.rawUnitRentTwdPing,
+        rentKind: classifyRentKind(r.rentTarget, r.buildingType, r.rentalType),
+        excluded: false,
+        excludeReason: "",
+        parkRentIncluded: false,
+        confidence: "low",
+        note: `${r.note}${r.note ? " " : ""}[refine error: ${msg}]`,
+      };
+    }
+  });
+
+  const allClean = failed === 0;
+  return {
+    code: allClean ? "OK" : "PARTIAL",
+    data: out,
+    ...(allClean ? {} : { partial: { ok: out.length - failed, failed } }),
+  };
+}
+
+function refineRentOne(r: CleanRentRecord): RefinedRentRecord {
+  let confidence: Confidence = "high";
+  const noteParts: string[] = [];
+
+  // ── Exclusions (flag, never drop) ─────────────────────────────────────────
+  let excluded = false;
+  let excludeReason = "";
+  const isParkingOnly = r.rentTarget === "車位";
+  if (KINSHIP_RE.test(r.note)) {
+    excluded = true;
+    excludeReason = "親友交易";
+  } else if (isParkingOnly) {
+    excluded = true;
+    excludeReason = "純車位";
+  } else if (r.mainUse && !r.mainUse.includes("住")) {
+    // rent 主要用途: 住家用/住商用/… count as residential; 商業用/停車空間/… do not.
+    excluded = true;
+    excludeReason = "非住宅";
+  } else if (COMMERCIAL_BTYPE_RE.test(r.buildingType)) {
+    excluded = true;
+    excludeReason = "非住宅";
+  }
+
+  // ── Parking rent: subtract only when separately reported ──────────────────
+  const hasParking = r.rentTarget.includes("車位");
+  const parkRentIncluded = hasParking && r.rentTarget !== "車位" && r.parkRentTwd === 0;
+  if (parkRentIncluded) {
+    noteParts.push("park rent bundled in total; none subtracted");
+    confidence = degrade(confidence);
+  }
+  const netRentTwd = round2(r.monthlyRentTwd - (parkRentIncluded ? 0 : r.parkRentTwd));
+
+  // Parking area is never reported for rent → net area = full area (flag it).
+  const netAreaPing = r.areaPing;
+
+  // ── Adjusted 單價 (元/坪/月) ───────────────────────────────────────────────
+  // Prefer the site's `p` for the plain case; when a separate 車位租金 was
+  // subtracted, recompute from net rent over the (parking-inclusive) area.
+  let adjUnitRentTwdPing = r.unitRentTwdPing > 0 ? r.unitRentTwdPing : r.rawUnitRentTwdPing;
+  if (!parkRentIncluded && r.parkRentTwd > 0 && r.areaPing > 0) {
+    adjUnitRentTwdPing = round2(netRentTwd / r.areaPing);
+  }
+
+  if (r.buildingAgeYears == null) confidence = degrade(confidence);
+  if (r.areaPing <= 0) confidence = "low";
+  if (excluded) confidence = "low";
+
+  const note =
+    noteParts.length > 0
+      ? `${r.note}${r.note ? " " : ""}[${noteParts.join("; ")}]`
+      : r.note;
+
+  return {
+    ...r,
+    note,
+    netRentTwd,
+    netAreaPing,
+    adjUnitRentTwdPing,
+    rentKind: classifyRentKind(r.rentTarget, r.buildingType, r.rentalType),
+    excluded,
+    excludeReason,
+    parkRentIncluded,
     confidence,
   };
 }

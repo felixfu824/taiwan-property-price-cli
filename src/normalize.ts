@@ -5,10 +5,10 @@
  * PURE: no I/O, no network. Faithful to source; NO judgement/adjustment
  * (that lives downstream in Refine).
  */
-import type { RawRow, CleanRawRecord } from "./types.js";
+import type { RawRow, CleanRawRecord, RentRawRow, CleanRentRecord } from "./types.js";
 
 /** Convert full-width digits (０-９, U+FF10–U+FF19) → half-width (0-9). */
-function toHalfWidthDigits(s: string): string {
+export function toHalfWidthDigits(s: string): string {
   return s.replace(/[０-９]/g, (ch) =>
     String.fromCharCode(ch.charCodeAt(0) - 0xff10 + 0x30),
   );
@@ -153,6 +153,78 @@ export function normalize(
       mainUse: str(row.pu),
       layout: str(row.v),
       hasElevator: str(row.el) === "有",
+      note: str(row.note),
+      lat: typeof row.lat === "number" ? row.lat : parseNum(row.lat),
+      lon: typeof row.lon === "number" ? row.lon : parseNum(row.lon),
+      detailKey: str(row.sq),
+      meta: { fetchedAt, queryId: meta?.queryId },
+    };
+  });
+}
+
+/**
+ * Normalize RENTAL rows into the CleanRentRecord seam.
+ *
+ * PURE. Faithful to source; NO judgement (that lives in refineRent). Note the
+ * unit differences vs sale: `tp` is 月租金 in 元 (NOT 萬), `p` is 元/坪/月, so
+ * there is NO /10000 conversion here.
+ */
+export function normalizeRent(
+  rows: RentRawRow[],
+  meta?: { queryId?: string },
+): CleanRentRecord[] {
+  const fetchedAt = new Date().toISOString();
+
+  return rows.map((row): CleanRentRecord => {
+    const address = pickAddress(str(row.a));
+    const addrNum = extractAddrNum(address);
+
+    const txnDateRoc = str(row.e);
+    const txnDate = rocToWesternYearMonth(txnDateRoc);
+
+    const monthlyRentTwd = parseNum(row.tp); // 元/月, NOT 萬
+    const areaPing = parseNum(row.s);
+    const areaM2 = round2(areaPing * PING_TO_M2);
+
+    // Site-reported 單價 (`p`, 元/坪/月) vs TRUE raw (月租金 / 面積).
+    const unitRentTwdPing = parseNum(row.p);
+    const rawUnitRentTwdPing =
+      areaPing > 0 ? round2(monthlyRentTwd / areaPing) : 0;
+
+    const gRaw = str(row.g).trim();
+    const buildingAgeYears = gRaw === "" ? null : parseNum(gRaw);
+    const fnRaw = str(row.fn).trim();
+    const elRaw = str(row.el).trim();
+
+    return {
+      building: str(row.bn),
+      address,
+      addrNum,
+      txnDate,
+      txnDateRoc,
+      monthlyRentTwd,
+      unitRentTwdPing: unitRentTwdPing > 0 ? unitRentTwdPing : rawUnitRentTwdPing,
+      unitRentFormula: str(row.msg),
+      rawUnitRentTwdPing,
+      areaPing,
+      areaM2,
+      parkRentTwd: parseNum(row.cp),
+      rentTarget: str(row.t),
+      buildingType: str(row.b),
+      mainUse: str(row.pu),
+      useClass: str(row.AA11),
+      layout: str(row.v),
+      floor: str(row.f),
+      hasMgmtOrg: str(row.m) === "有",
+      // fn is 有/"" on old-form rows; a 附屬設備 comma list (傢俱 as an item)
+      // on new-form rows (簽約 ≥112/09). Both encodings answer "furnished?".
+      hasFurniture: fnRaw === "有" || fnRaw.includes("傢俱"),
+      hasElevator: elRaw === "有" ? true : elRaw === "無" ? false : null,
+      equipment: fnRaw === "有" || fnRaw === "無" ? "" : fnRaw,
+      rentalType: str(row.rtype),
+      rentalService: str(row.rserviec),
+      buildingAgeYears,
+      rentPeriod: str(row.rperiod),
       note: str(row.note),
       lat: typeof row.lat === "number" ? row.lat : parseNum(row.lat),
       lon: typeof row.lon === "number" ? row.lon : parseNum(row.lon),

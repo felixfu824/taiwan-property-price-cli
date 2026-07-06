@@ -19,11 +19,13 @@ Covered today:
 
 - Existing-home sale queries (`--query biz`, the default).
 - Presale unit queries (`--query sale` or `--presale`).
+- Rental (lease) queries (`--query rent` or `--rent`). Rental returns a distinct
+  lease schema (monthly rent, rent-per-ping, lease period, management-org,
+  furniture) via its own normalize/refine path — see "Rental Output Model" below.
 
 Not covered today:
 
-- Rental queries.
-- Presale project registry queries.
+- Presale project registry queries (預售屋建案 — a project list, different schema).
 - Browser UI replacement for a person checking one property manually.
 
 For one-off human browsing, consumer websites such as 591 or Leju may be more convenient. TW Property Price CLI is designed for code and agent workflows.
@@ -100,6 +102,17 @@ Use presale mode with either `--presale` or `--query sale`:
 tw-lvr extract --where "苗栗縣竹南鎮" --from 202601 --to 202612 --presale --community "藏富天下" --top 5 --pretty
 ```
 
+Use rental (lease) mode with either `--rent` or `--query rent`. Rental output is a
+distinct lease schema (see "Rental Output Model"). Coverage is continuous and
+current, but the reporting form changed 2023-09 so field availability differs by
+era; check the per-year `coverage:` stderr line before trending. A road in
+`--where` is applied client-side for rent (the site only resolves districts for
+leases):
+
+```bash
+tw-lvr extract --where "台北市大安區" --from 202201 --to 202612 --rent --refine --top 10 --pretty
+```
+
 Add `--refine` when you want analysis-oriented fields such as adjusted unit price, exclusion flags, and confidence:
 
 ```bash
@@ -114,7 +127,7 @@ tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 20
 
 ```bash
 tw-lvr extract --where <address> --from <YYYYMM> --to <YYYYMM>
-               [--refine] [--ptype 1,2] [--query biz|sale | --presale]
+               [--refine] [--ptype 1,2] [--query biz|sale|rent | --presale | --rent]
                [--top N | --limit N] [--community <name>]
                [--out <file|dir/>] [--format json|csv] [--pretty]
 ```
@@ -127,9 +140,10 @@ Flags:
 | `--from <YYYYMM>` | Start month in western calendar. Required. Example: `202401`. |
 | `--to <YYYYMM>` | End month in western calendar. Required. Example: `202612`. |
 | `--refine` | Adds Layer B fields: adjusted/comparable unit price, exclusion flags, parking provenance, and confidence. |
-| `--ptype <codes>` | Property type codes. Default is `1,2` (`房地`). Common site codes include `3` land, `4` building, and `5` parking. |
-| `--query biz|sale` | Query type. `biz` is the default existing-home sale tab; `sale` is presale. |
+| `--ptype <codes>` | Property type codes. Sale default `1,2` (`房地`); `3` land, `4` building, `5` parking. Rent default `1,2,3,4,5,6,7` — rent reuses `ptype` as the 標的-category filter, and codes `6`/`7` (租賃房屋, 租賃房屋+車位) carry all leases reported on the post-2023-09 form. Keep at least one `1`-`5` code when overriding; `6`/`7` alone return empty. |
+| `--query biz|sale|rent` | Query type. `biz` is the default existing-home sale tab; `sale` is presale; `rent` is rental (lease). |
 | `--presale` | Alias for `--query sale`. |
+| `--rent` | Alias for `--query rent`. Output is a lease schema (see "Rental Output Model"). Road-level `--where` is filtered client-side (stderr `note:` shows district→road counts). Check the `coverage:` stderr line before trending; the 2023-09 reporting-form change shifts field availability and reporter mix. |
 | `--community <name>` | Post-filters returned rows where `building` includes the community/building name. |
 | `--top N` | Keeps only the N newest transactions after sorting. |
 | `--limit N` | Alias for `--top N`. |
@@ -153,8 +167,12 @@ Notes:
 tw-lvr glossary
 tw-lvr glossary --layer clean
 tw-lvr glossary --layer refined
+tw-lvr glossary --rent                 # rental (lease) field dictionary
+tw-lvr glossary --layer rent-refined   # one rent layer
 tw-lvr glossary --format json
 ```
+
+Valid `--layer` values: `all` (default), `clean`, `refined`, `rent`, `rent-clean`, `rent-refined`.
 
 `schema` is an alias kept for scripts:
 
@@ -162,7 +180,7 @@ tw-lvr glossary --format json
 tw-lvr schema --format json
 ```
 
-`--layer` accepts `clean`, `refined`, or `all`. `--format` accepts `table` or `json`.
+`--layer` accepts `all`, `clean`, `refined`, `rent`, `rent-clean`, or `rent-refined`. `--format` accepts `table` or `json`.
 
 ### `skill`
 
@@ -276,6 +294,78 @@ These fields are added only with `--refine`.
 | `parkingRefSource` | Parking-area adjustment basis: `reported`, `derived`, `district_fallback`, or `curated`. |
 | `confidence` | Rollup signal for adjusted figures: `high`, `medium`, or `low`. This is a data-quality flag, not a valuation model. |
 
+## Rental Output Model
+
+Rental (`--rent` / `--query rent`) uses a **separate** record shape, not the sale
+fields. It has its own clean and refined layers; run `tw-lvr glossary --rent` for
+the full field dictionary. Key differences from sale:
+
+- Prices are **rents**, in **元 (TWD), not 萬**. `monthlyRentTwd` is the total
+  monthly rent; `unitRentTwdPing` is rent per 坪 per month.
+- No 總價 / 單價 / car-park unit-price moat. Layer B is lighter: net-of-parking
+  rent, exclusion flags, a coarse 出租型態 proxy (`rentKind`), and confidence.
+- **Road-level rent queries are filtered client-side.** The LVR rent endpoint
+  accepts but ignores the 門牌/road (`doorno`) param — a road query returns the
+  whole district. The engine therefore narrows to the road by address substring
+  after normalize (full-width digits normalized), and the CLI prints a stderr
+  `note:` with district-rows → road-rows counts. Omit the road in `--where` for a
+  deliberate district-wide pull. Sale queries are unaffected (filtered server-side).
+- **Two reporting-form eras.** MOI changed the rental 申報書 effective
+  2023-09-01, and the source keys each era to different internal 標的 codes
+  (the engine queries both — versions <0.2.0 silently dropped every
+  post-Aug-2023 building lease). Coverage is continuous and current
+  (e.g. 信義區: 809/917/1,354/1,699 rows for 2022–2025), but field
+  availability differs by era: `rentalType`, `rentalService`, `hasElevator`,
+  `equipment`, and a filled `rentPeriod` exist only on post-2023-09 leases,
+  while `useClass` exists only on pre-2023-09 ones. The reporter mix also
+  widens at the seam (brokers only → brokers + rental-service businesses), so
+  treat level shifts across 2023-09 as partly compositional. The CLI prints a
+  per-year `coverage:` line to stderr on every extract — check it before
+  attempting any trend.
+- **Social housing.** `rentalService` values starting with `社會住宅`
+  (代管/包租轉租) are subsidized leases at below-market rent and can be a
+  third of a district's registrations — drop them for market-rate comps.
+- `useClass` (`住`/`商`/`其他`, raw `AA11`) is the site's **zoning-derived**
+  bucket, not the lease's actual use — 特定專用區 towers (信義計畫區) land in
+  `其他`, and the field is empty on post-2023-09 rows. Do not filter
+  residential on it; use `excluded` (mainUse + building type based).
+
+Clean rent fields (always present with `--rent`):
+
+| Field | Meaning |
+|---|---|
+| `building` | Community name (`""` if none). |
+| `address` / `addrNum` | Lease address (half-width) and door number. |
+| `txnDate` / `txnDateRoc` | Contract month (western `YYYY-MM`) and raw ROC date. |
+| `monthlyRentTwd` | Total monthly rent in 元 (parking still inside). |
+| `unitRentTwdPing` | Rent per 坪 per month (元), site-reported. |
+| `rawUnitRentTwdPing` | True raw rent per 坪 = 月租金 / 面積. |
+| `unitRentFormula` | The site's basis for the unit rent. |
+| `areaPing` / `areaM2` | Leased area in 坪 and m². |
+| `parkRentTwd` | Separately reported car-park rent (元/月); `0` if none. |
+| `rentTarget` | 租賃標的. Pre-2023-09: 建物 / 房地(土地+建物)(±車位) / 車位 / 土地. Post: 租賃房屋(±車位). |
+| `buildingType` / `mainUse` / `useClass` / `layout` / `floor` | Building type, main use, use class (pre-2023-09 rows only), room layout, floor. |
+| `hasMgmtOrg` / `hasFurniture` | Management-organisation and furniture booleans (furniture is era-consistent: flag on old-form rows, 傢俱-in-equipment on new-form). |
+| `hasElevator` | Elevator boolean; `null` = unreported (all pre-2023-09 rows). |
+| `equipment` | 附屬設備 comma list (post-2023-09 rows; `""` on old-form rows). |
+| `rentalType` | 出租型態: 整戶出租 / 分層出租 / 獨立套房 / 分租套房 / 分租雅房 (`""` when unreported — all old-form rows). |
+| `rentalService` | 租賃住宅服務: 一般轉租/代管/包租, 社會住宅代管, 社會住宅包租轉租 (`""` = none). 社會住宅* = subsidized. |
+| `buildingAgeYears` | Building age in years (`0` often means unreported; `null` if blank). |
+| `rentPeriod` | Lease period, ROC `YYYMMDD~YYYMMDD` (`""` when unreported; filled on virtually all post-2023-09 rows). |
+| `note` / `lat` / `lon` / `detailKey` | Remarks, coordinates, detail key. |
+
+Refined rent fields (added with `--rent --refine`):
+
+| Field | Meaning |
+|---|---|
+| `netRentTwd` | Monthly rent minus separately reported car-park rent. |
+| `netAreaPing` | Area net of parking (equals `areaPing`; rent never reports parking area). |
+| `adjUnitRentTwdPing` | Corrected rent per 坪 per month. |
+| `rentKind` | Coarse 出租型態: `整棟/獨立` \| `套房` \| `分層/其他` \| `車位` \| `土地`. Uses reported `rentalType` when present (room leases → `套房` even inside 公寓/大樓), else proxied from 標的 + 建物型態. |
+| `excluded` / `excludeReason` | Comp-exclusion flag and reason (`親友交易` / `純車位` / `非住宅` — the latter covers non-住 `mainUse` and commercial building types: 店面/辦公商業/廠辦/工廠/倉庫). |
+| `parkRentIncluded` | `true` when parking is present but its rent is bundled into the total. |
+| `confidence` | `high` / `medium` / `low` data-quality rollup. |
+
 ## Exit Codes
 
 | Code | Outcome | Meaning |
@@ -302,8 +392,8 @@ Input:
 
 - `where`: address or locality string, such as `台北市信義區松德路169巷`.
 - `from` / `to`: western year-month strings in `YYYYMM` format, such as `202401` and `202612`.
-- `ptype`: property type codes, default `1,2`.
-- `queryType`: `biz` or `sale`.
+- `ptype`: property type codes; sale default `1,2`, rent default `1,2,3,4,5,6,7`.
+- `queryType`: `biz`, `sale`, or `rent`.
 
 Output includes city/town codes, door/address text, ROC year/month fields, property type codes, and a human-readable `resolvedLabel`.
 
@@ -325,6 +415,8 @@ Converts raw site rows into typed Clean Raw Records:
 
 Normalize does not apply subjective exclusions or comparable-price judgment.
 
+Rental rows go through a separate `normalizeRent` stage into Clean Rent Records (rents in `元`, lease-specific fields) — the sale normalizer would misread them.
+
 ### Refine
 
 Runs only when `--refine` or the `extractRefined()` API is used. It adds:
@@ -335,6 +427,8 @@ Runs only when `--refine` or the `extractRefined()` API is used. It adds:
 - Presale and parking provenance flags.
 - Confidence rollup.
 
+Rental records are refined by a separate, lighter `refineRent` stage (net-of-parking rent, exclusion flags, `rentKind`, confidence) — there is no car-park unit-price adjustment for leases. Rent's `非住宅` exclusion checks both `mainUse` and the building type (店面/辦公商業/廠辦/工廠/倉庫), because live data contains storefronts mis-registered as 住家用.
+
 `confidence` and exclusion fields are intended for analysis hygiene. They are not appraisal outputs.
 
 ## Library API
@@ -342,8 +436,10 @@ Runs only when `--refine` or the `extractRefined()` API is used. It adds:
 The package exports the same engine used by the CLI.
 
 ```ts
-import { extract, extractRefined } from "tw-lvr-cli";
-import type { CleanRawRecord, RefinedRecord, QueryInput, Result } from "tw-lvr-cli";
+import { extract, extractRefined, extractRent, extractRentRefined } from "tw-lvr-cli";
+import type {
+  CleanRawRecord, RefinedRecord, CleanRentRecord, RefinedRentRecord, QueryInput, Result,
+} from "tw-lvr-cli";
 
 const input: QueryInput = {
   where: "新竹市東區關新路",
@@ -357,18 +453,36 @@ const rows = raw.data ?? [];
 console.log(rows[0]?.totalPriceWan);
 
 const refined: Result<RefinedRecord[]> = await extractRefined(input);
+
+// Rental (lease) — a separate schema. queryType is forced to "rent" internally.
+const leases: Result<RefinedRentRecord[]> = await extractRentRefined({
+  where: "台北市大安區",
+  from: "202201",
+  to: "202612",
+});
+console.log(leases.data?.[0]?.monthlyRentTwd);
 ```
 
 Public exports include:
 
 ```ts
-export { extract, extractRefined, resolve, fetchRaw, normalize, refine, closeBrowser };
-export type { QueryInput, CleanRawRecord, RefinedRecord, Result, OutcomeCode, RefineOptions };
+export {
+  extract, extractRefined, extractRent, extractRentRefined,
+  resolve, fetchRaw, normalize, normalizeRent, refine, refineRent, closeBrowser,
+};
+export type {
+  QueryInput, CleanRawRecord, RefinedRecord, RentRawRow, CleanRentRecord,
+  RefinedRentRecord, Result, OutcomeCode, RefineOptions,
+};
 ```
 
 `extract(input)` returns `Promise<Result<CleanRawRecord[]>>`.
 
 `extractRefined(input)` returns `Promise<Result<RefinedRecord[]>>`.
+
+`extractRent(input)` returns `Promise<Result<CleanRentRecord[]>>`.
+
+`extractRentRefined(input)` returns `Promise<Result<RefinedRentRecord[]>>`.
 
 Callers should branch on `result.code` rather than parsing error text.
 
@@ -380,7 +494,7 @@ interface QueryInput {
   from: string;
   to: string;
   ptype?: string;
-  queryType?: "biz" | "sale";
+  queryType?: "biz" | "sale" | "rent";
 }
 ```
 

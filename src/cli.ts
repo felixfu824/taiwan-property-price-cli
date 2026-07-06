@@ -25,7 +25,14 @@ import {
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
-import { extract, extractRefined, closeBrowser, type ExtractMeta } from "./index.js";
+import {
+  extract,
+  extractRefined,
+  extractRent,
+  extractRentRefined,
+  closeBrowser,
+  type ExtractMeta,
+} from "./index.js";
 import type { OutcomeCode, QueryInput } from "./types.js";
 import { GLOSSARY, type FieldLayer, type GlossaryEntry } from "./glossary.js";
 
@@ -36,9 +43,17 @@ const EXIT: Record<OutcomeCode, number> = {
 const PACKAGE_NAME = "tw-lvr-cli";
 const SKILL_NAME = "tw-lvr-cli";
 
-function parseQueryType(args: Record<string, string | boolean>): "biz" | "sale" | null {
-  const raw = args.presale ? "sale" : args.query ? String(args.query) : args.type ? String(args.type) : "biz";
-  if (raw === "biz" || raw === "sale") return raw;
+function parseQueryType(args: Record<string, string | boolean>): "biz" | "sale" | "rent" | null {
+  const raw = args.presale
+    ? "sale"
+    : args.rent
+      ? "rent"
+      : args.query
+        ? String(args.query)
+        : args.type
+          ? String(args.type)
+          : "biz";
+  if (raw === "biz" || raw === "sale" || raw === "rent") return raw;
   return null;
 }
 
@@ -89,6 +104,55 @@ export function filterRowsByCommunity(
 
 export function sortRowsNewestFirst(rows: Record<string, unknown>[]): Record<string, unknown>[] {
   return rows.slice().sort((a, b) => String(b.txnDateRoc ?? "").localeCompare(String(a.txnDateRoc ?? "")));
+}
+
+/**
+ * Per-year row counts from txnDateRoc, e.g.
+ * "coverage: 2022=808 2023=503 2024=9 (span 111/01/05..113/11/20)".
+ * Makes thin years visible without loading the output file — the guard that
+ * exposed the missing new-form ptype codes. Empty string when no dated rows.
+ * `label` overrides the "coverage" prefix (used for the refined "usable" line —
+ * raw counts overstate trend-worthy n when a cut is exclusion-heavy).
+ */
+export function coverageLine(rows: Record<string, unknown>[], label = "coverage"): string {
+  const byYear = new Map<number, number>();
+  let min = "";
+  let max = "";
+  for (const r of rows) {
+    const roc = String(r.txnDateRoc ?? "");
+    const y = parseInt(roc, 10);
+    if (!Number.isFinite(y) || y <= 0) continue;
+    const ad = 1911 + y;
+    byYear.set(ad, (byYear.get(ad) ?? 0) + 1);
+    // Zero-padded "YYY/MM/DD" → lexicographic order == chronological order.
+    if (!min || roc < min) min = roc;
+    if (!max || roc > max) max = roc;
+  }
+  if (byYear.size === 0) return "";
+  const parts = [...byYear.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([y, n]) => `${y}=${n}`);
+  return `${label}: ${parts.join(" ")} (span ${min}..${max})`;
+}
+
+/**
+ * Make ERR_ENV browser-launch failures actionable. Playwright's launch error
+ * carries a multi-line chromium log wall that buries the one useful fact; when
+ * the browser binary EXISTS but the launch was killed (sandboxed harnesses
+ * blocking process spawn / networking), keep the first line and append the fix.
+ * Other errors pass through untouched.
+ */
+export function envErrorHint(code: string, error: string): string {
+  if (code !== "ERR_ENV") return error;
+  if (!/browserType\.launch|Browser logs:|bootstrap_check_in/.test(error)) return error;
+  const firstLine = error.split("\n", 1)[0].trim();
+  return (
+    `${firstLine}\n` +
+    "The browser binary launched but was killed — this is almost always a sandbox " +
+    "blocking process spawn or networking (common in agent harnesses). Retry outside " +
+    "the sandbox / with escalated permissions. If the binary is missing instead, run: " +
+    "npx playwright install chromium-headless-shell"
+  );
 }
 
 export function limitRows(
@@ -239,22 +303,32 @@ function glossarySection(title: string, entries: GlossaryEntry[]): string {
 
 export function schemaTable(
   entries: GlossaryEntry[],
-  opts: { layer?: FieldLayer | "all" } = {},
+  opts: { layer?: FieldLayer | "all" | "rent" } = {},
 ): string {
   const layer = opts.layer ?? "all";
-  const clean = entries.filter((e) => e.layer === "clean");
-  const refined = entries.filter((e) => e.layer === "refined");
-  if (layer === "clean") return glossarySection("CLEAN FIELDS (always present)", clean);
-  if (layer === "refined") return glossarySection("REFINED FIELDS (--refine only)", refined);
-  return [
-    glossarySection("CLEAN FIELDS (always present)", clean),
-    glossarySection("REFINED FIELDS (--refine only)", refined),
-  ].join("\n\n");
+  const section = (l: FieldLayer, title: string) => {
+    const rows = entries.filter((e) => e.layer === l);
+    return rows.length ? glossarySection(title, rows) : "";
+  };
+  const sale = [
+    section("clean", "SALE — CLEAN FIELDS (always present)"),
+    section("refined", "SALE — REFINED FIELDS (--refine only)"),
+  ];
+  const rent = [
+    section("rent-clean", "RENT — CLEAN FIELDS (--rent, always present)"),
+    section("rent-refined", "RENT — REFINED FIELDS (--rent --refine only)"),
+  ];
+  if (layer === "clean") return section("clean", "SALE — CLEAN FIELDS (always present)");
+  if (layer === "refined") return section("refined", "SALE — REFINED FIELDS (--refine only)");
+  if (layer === "rent-clean") return section("rent-clean", "RENT — CLEAN FIELDS (--rent, always present)");
+  if (layer === "rent-refined") return section("rent-refined", "RENT — REFINED FIELDS (--rent --refine only)");
+  if (layer === "rent") return rent.filter(Boolean).join("\n\n");
+  return [...sale, ...rent].filter(Boolean).join("\n\n");
 }
 
 const USAGE =
   "usage: tw-lvr extract --where <addr> --from <YYYYMM> --to <YYYYMM> [--refine] [--ptype 1,2]\n" +
-  "                      [--query biz|sale|--presale] [--community <name>] [--top N|--limit N]\n" +
+  "                      [--query biz|sale|rent | --presale | --rent] [--community <name>] [--top N|--limit N]\n" +
   "                      [--out file|folder/] [--pretty] [--format json|csv]\n" +
   "       tw-lvr glossary [--layer clean|refined|all] [--format table|json]\n" +
   "       tw-lvr schema [--format table|json]   # alias for glossary\n" +
@@ -280,9 +354,13 @@ function printHelp(): void {
   lines.push("  --from <YYYYMM>    Start month, WESTERN, e.g. 202401 (required).");
   lines.push("  --to <YYYYMM>      End month, WESTERN, e.g. 202612 (required).");
   lines.push("  --refine           Add Layer B: car-park-adjusted unit price, exclusion flags, confidence.");
-  lines.push("  --ptype <codes>    Property type codes, default 1,2 (房地). 3=土地 4=建物 5=車位.");
-  lines.push("  --query <kind>     biz (default, 買賣) or sale (預售屋).");
+  lines.push("  --ptype <codes>    Property type codes. Sale default 1,2 (房地); 3=土地 4=建物 5=車位.");
+  lines.push("                     Rent default 1,2,3,4,5 (all 標的).");
+  lines.push("  --query <kind>     biz (default, 買賣), sale (預售屋), or rent (租賃).");
   lines.push("  --presale          Alias for --query sale.");
+  lines.push("  --rent             Alias for --query rent. Output is a LEASE schema (月租金/坪租/租期),");
+  lines.push("                     not a price schema. Tip: use a WIDE date window — recent months carry");
+  lines.push("                     few building leases (reporting lag).");
   lines.push("  --community <name> Post-filter: keep only records whose building name includes <name>.");
   lines.push("  --top N            Return only the N most recent transactions (alias: --limit N).");
   lines.push("  --limit N          Alias for --top.");
@@ -302,6 +380,7 @@ function printHelp(): void {
   lines.push("  tw-lvr extract --where \"台北市大安區\" --from 202401 --to 202612 --community \"敦南琢真\" --out ./out/");
   lines.push("  tw-lvr extract --where \"新北市板橋區文化路\" --from 202501 --to 202612 --top 20 --format csv --out latest.csv");
   lines.push("  tw-lvr extract --where \"苗栗縣竹南鎮\" --from 202601 --to 202612 --presale --community \"藏富天下\"");
+  lines.push("  tw-lvr extract --where \"台北市大安區\" --from 202201 --to 202612 --rent --refine --top 30 --out ./rent/");
   lines.push("  tw-lvr glossary --layer refined");
   lines.push("  tw-lvr upgrade --agent codex");
   lines.push("  tw-lvr skill install --agent codex");
@@ -354,16 +433,24 @@ async function runSkill(args: Record<string, string | boolean>): Promise<void> {
 
 async function runGlossary(args: Record<string, string | boolean>): Promise<void> {
   const fmt = args.format ? String(args.format) : "table";
-  const layer = args.layer ? String(args.layer) : "all";
-  if (!["all", "clean", "refined"].includes(layer)) {
-    console.error(`error: --layer must be clean, refined, or all (got "${layer}")`);
+  // Convenience: `--rent`/`--query rent` maps to the rent layers.
+  const rentShortcut = args.rent || parseQueryType(args) === "rent";
+  const layer = args.layer ? String(args.layer) : rentShortcut ? "rent" : "all";
+  const VALID = ["all", "clean", "refined", "rent", "rent-clean", "rent-refined"];
+  if (!VALID.includes(layer)) {
+    console.error(`error: --layer must be one of ${VALID.join(", ")} (got "${layer}")`);
     process.exit(2);
   }
-  const entries = layer === "all" ? GLOSSARY : GLOSSARY.filter((e) => e.layer === layer);
+  const entries =
+    layer === "all"
+      ? GLOSSARY
+      : layer === "rent"
+        ? GLOSSARY.filter((e) => e.layer === "rent-clean" || e.layer === "rent-refined")
+        : GLOSSARY.filter((e) => e.layer === layer);
   if (fmt === "json") {
     process.stdout.write(JSON.stringify(entries, null, 2) + "\n");
   } else if (fmt === "table") {
-    process.stdout.write(schemaTable(GLOSSARY, { layer: layer as FieldLayer | "all" }) + "\n");
+    process.stdout.write(schemaTable(GLOSSARY, { layer: layer as FieldLayer | "all" | "rent" }) + "\n");
   } else {
     console.error(`error: --format must be table or json (got "${fmt}")`);
     process.exit(2);
@@ -383,15 +470,28 @@ async function runExtract(args: Record<string, string | boolean>): Promise<void>
     queryType: parseQueryType(args) ?? undefined,
   };
   if (input.queryType == null) {
-    console.error(`error: --query must be biz or sale (got "${String(args.query ?? args.type)}")`);
+    console.error(`error: --query must be biz, sale, or rent (got "${String(args.query ?? args.type)}")`);
     process.exit(2);
   }
   const meta: ExtractMeta = {};
-  const res = args.refine ? await extractRefined(input, undefined, meta) : await extract(input, meta);
+  const res =
+    input.queryType === "rent"
+      ? args.refine
+        ? await extractRentRefined(input, meta)
+        : await extractRent(input, meta)
+      : args.refine
+        ? await extractRefined(input, undefined, meta)
+        : await extract(input, meta);
 
   if (meta.resolvedLabel) console.error(`resolved: ${meta.resolvedLabel}`);
+  if (meta.rentRoadFilter) {
+    // LVR ignores doorno for rent; the engine narrowed to the road client-side.
+    console.error(
+      `note: rent queries return the whole district; filtered to "${meta.rentRoadFilter}" client-side (${meta.rentDistrictRows} district row(s) → ${(res.data ?? []).length})`,
+    );
+  }
   if (res.code !== "OK" && res.code !== "OK_EMPTY" && res.code !== "PARTIAL") {
-    console.error(`[${res.code}] ${res.error ?? ""}`);
+    console.error(`[${res.code}] ${envErrorHint(res.code, res.error ?? "")}`);
     await closeBrowser();
     process.exit(EXIT[res.code]);
   }
@@ -420,6 +520,18 @@ async function runExtract(args: Record<string, string | boolean>): Promise<void>
   const rows = limitRows(data, topRaw);
   const communityNote = community ? ` matching "${community}" (of ${totalFetched})` : "";
   console.error(`${res.code}: ${data.length} record(s)${communityNote}` + (rows.length < data.length ? `, showing top ${rows.length}` : "") + (res.partial ? ` (ok=${res.partial.ok} failed=${res.partial.failed})` : ""));
+  const cov = coverageLine(data);
+  if (cov) console.error(cov);
+  if (args.refine) {
+    // Raw counts overstate trend-worthy n on exclusion-heavy cuts (e.g. a
+    // commercial-heavy road where a third of leases are 非住宅) — surface the
+    // per-year counts that actually survive the exclusion flags.
+    const usable = data.filter((r) => r.excluded !== true);
+    if (usable.length < data.length) {
+      const uline = coverageLine(usable, "usable (non-excluded)");
+      if (uline) console.error(uline);
+    }
+  }
 
   const outPath = args.out ? String(args.out) : "";
   const fmt = args.format ? String(args.format) : (outPath.endsWith(".csv") ? "csv" : "json");

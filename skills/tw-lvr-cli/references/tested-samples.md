@@ -13,10 +13,14 @@ tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 20
 tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 202612 --top 3 --format csv
 tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 202612 --top 3 --out samples/songde.json
 tw-lvr extract --where "苗栗縣竹南鎮" --from 202601 --to 202612 --presale --community "藏富天下" --top 5 --out samples/zhunan-presale.json
+tw-lvr extract --where "台北市大安區" --from 202201 --to 202612 --rent --refine --top 5 --pretty
 ```
 
 Expected: help and schema exit 0; JSON parses; CSV has escaped scalar fields and
-omits `meta`; `--out` creates the file and keeps stdout small.
+omits `meta`; `--out` creates the file and keeps stdout small. The `--rent` sample
+returns lease records (`monthlyRentTwd` in 元, `rentTarget`, `hasFurniture`) with
+continuous per-year counts on the `coverage:` stderr line — a cliff after 2023
+means an old (<0.2.0) CLI that lacked the new-form ptype codes.
 
 ## Live Canaries
 
@@ -33,6 +37,8 @@ Use `--top 5 --out <file>` for large/coarse queries.
 | `--where "臺北市信義區信義路五段" --community "信義香榭"` | every output row has `building` containing 信義香榭 |
 | `--where "苗栗縣竹南鎮" --presale --community "藏富天下"` | returns presale rows with `buildingUnit` such as B2/A2 and `siteUnitPriceFormula=總價/總面積` |
 | `--where "金門縣金湖鎮" --query sale --community "金湖印象"` | returns presale rows for 金湖印象; use `buildingUnit` to match listing rows |
+| `--where "台北市信義區信義路五段" --from 202201 --to 202612 --rent` | every `address` contains 信義路五段 (rent road filter is client-side; stderr `note:` shows district→road counts) |
+| `--where "台北市信義區" --from 202401 --to 202612 --rent --top 5` | `coverage:` shows non-trivial 2024+ counts (hundreds+/yr) incl. `rentTarget` 租賃房屋 building leases, not just 車位/土地 |
 
 Example:
 

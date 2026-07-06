@@ -2,13 +2,14 @@
 
 [![npm version](https://img.shields.io/npm/v/tw-lvr-cli.svg)](https://www.npmjs.com/package/tw-lvr-cli) [![license](https://img.shields.io/npm/l/tw-lvr-cli.svg)](./LICENSE) [![node](https://img.shields.io/node/v/tw-lvr-cli.svg)](https://nodejs.org)
 
-**A low-context-footprint, high-reliability CLI for Taiwan property transaction prices from 內政部實價登錄** — turns the latest building-level transactions into clean JSON/CSV that stays on disk, out of the LLM's context. For agents, apps, and scripts. Shipped with a portable Agent Skill (`SKILL.md`) as a Claude/Codex-compatible plugin. The npm package stays `tw-lvr-cli`; the command stays `tw-lvr`.
+**A low-context-footprint, high-reliability CLI for Taiwan property transaction data from 內政部實價登錄** — turns the latest building-level **sale prices and transacted rents** into clean JSON/CSV that stays on disk, out of the LLM's context. For agents, apps, and scripts. Shipped with a portable Agent Skill (`SKILL.md`) as a Claude/Codex-compatible plugin. The npm package stays `tw-lvr-cli`; the command stays `tw-lvr`.
 
 > 繁體中文為主要版本 → [README.md](./README.md). Just looking up one building? Use 591 or 樂居 — free, great UIs, already cleaned. TW Property Price CLI fills the other gap: **clean, latest Taiwan property transaction data a program, app, or agent can consume directly.**
+> Checking rent levels? Listing sites show **asking** rents; `--rent` returns the registry's **transacted** rents — with lease period, rental type, and a flag that separates subsidized social-housing leases from the market.
 
 <p align="center">
   <img src="media/readme-demo.gif"
-       alt="TW Property Price CLI demo — a Hsinchu lookup returns clean JSON; a whole Banqiao district writes 8,482 rows to disk, 0 rows in model context"
+       alt="TW Property Price CLI demo — a Da'an District transacted-rent lookup returns clean JSON; a whole Banqiao district writes 8,775 rows to disk, 0 rows in model context"
        width="100%">
 </p>
 
@@ -47,7 +48,25 @@ The official site is free, the most complete source, and ideal for a *human* loo
 | No batch: page through a whole district | Pull a whole district in one call, to disk |
 | Human clicks only, not programmable | Callable by a script / agent / backend |
 
-**Covered today:** existing-home sale (買賣) and pre-sale (預售屋) queries. **Not yet:** rental (租賃) and pre-sale-project registry (預售屋建案) — different data schemas, tracked as follow-ups.
+**Covered today:** existing-home sale (買賣), pre-sale (預售屋), and **rental (租賃, `--rent`)** queries. Rental has its own output schema (monthly rent / rent-per-ping / lease period / management-org / furniture), not the sale fields reshaped. **Not yet:** pre-sale-project registry (預售屋建案) — a project list with a different schema, tracked as a follow-up.
+
+The 3 latest **transacted rents** in 大安區 (fields excerpted; full dictionary: `tw-lvr glossary --rent`):
+
+```bash
+tw-lvr extract --where "台北市大安區" --from 202401 --to 202606 --rent --refine --top 3
+```
+
+```json
+[
+  { "address": "大安區臨江街93號三樓之1",           "txnDateRoc": "115/05/20", "monthlyRentTwd": 15000, "unitRentTwdPing": 2479, "rentalType": "分租套房", "rentalService": "一般代管",     "rentPeriod": "1150601~1160531" },
+  { "address": "大安區復興南路一段107巷5弄8號四樓", "txnDateRoc": "115/05/20", "monthlyRentTwd": 15200, "unitRentTwdPing": 3802, "rentalType": "分租雅房", "rentalService": "一般轉租",     "rentPeriod": "1150620~1160619" },
+  { "address": "大安區安居街124巷6號二樓",          "txnDateRoc": "115/05/20", "monthlyRentTwd": 22000, "unitRentTwdPing": 962,  "rentalType": "整戶出租", "rentalService": "社會住宅代管", "rentPeriod": "1150521~1160520" }
+]
+```
+
+The third row is a subsidized social-housing lease (962 元/坪 vs market 2,479–3,802) — `rentalService` lets you separate subsidized leases from market rent, which listing sites can't do.
+
+> Rental tip: MOI switched to a new rental reporting form in Sep 2023 and the government site keys the two eras to different internal codes — this tool queries both, so coverage is continuous and current (check the per-year `coverage:` stderr line before reading a trend). Post-2023-09 leases carry extra fields: `rentalType` (出租型態), `rentalService` (rental-service business — values starting with `社會住宅` are subsidized social housing; drop them for market-rate comps), `hasElevator`, `equipment`. A road in `--where` is applied client-side for rent (the government site only resolves rental queries to district level; stderr notes the district→road counts).
 
 ---
 
@@ -138,11 +157,11 @@ tw-lvr --help / --version
 Full surface:
 ```
 tw-lvr extract --where <address> --from <YYYYMM> --to <YYYYMM>
-               [--refine] [--ptype 1,2] [--query biz|sale | --presale]
+               [--refine] [--ptype 1,2] [--query biz|sale|rent | --presale | --rent]
                [--top N | --limit N] [--community <name>]
                [--out <file|dir>] [--format json|csv] [--pretty]
 ```
-- `--query biz` (existing-home sale) is the default; `--presale` switches to the pre-sale tab.
+- `--query biz` (existing-home sale) is the default; `--presale` switches to the pre-sale tab; `--rent` switches to rental (rental output schema — see `tw-lvr glossary --rent`).
 - **Keep results off-context:** beyond a handful of rows, use `--out` and read back only the slice you need.
 - For long spans / dense districts, chunk the month range (≤60 months per call); one oversized response fails with `ERR_NETWORK`.
 - Exit codes: `0` ok/empty · `2` bad input · `3` site changed · `4` network · `5` rate limited · `6` environment/browser · `7` partial.

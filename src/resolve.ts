@@ -604,8 +604,23 @@ function resolvePeriodRange(
   };
 }
 
-function queryType(input: QueryInput): "biz" | "sale" {
+function queryType(input: QueryInput): "biz" | "sale" | "rent" {
   return input.queryType ?? "biz";
+}
+
+/**
+ * Default ptype per query type. Sale/presale default to "1,2" (房地). Rent
+ * reuses ptype as the 標的-category filter and needs the FULL set
+ * "1,2,3,4,5,6,7": codes 1-5 carry old-form leases (≤112/08) + 土地(3)/車位(5);
+ * codes 6 (租賃房屋) and 7 (租賃房屋+車位) carry every building lease reported
+ * on the new form effective 112/09/01 — omitting them silently drops all
+ * post-Aug-2023 building rentals (see docs/rent-schema-notes.md). The site's
+ * own rent search sends 6,7 via its hidden rent_ptype field. Codes 6/7 alone
+ * (without a 1-5 code present) return empty — always keep a 1-5 code in the set.
+ */
+function defaultPtype(input: QueryInput): string {
+  if (input.ptype) return input.ptype;
+  return queryType(input) === "rent" ? "1,2,3,4,5,6,7" : "1,2";
 }
 
 export function resolve(input: QueryInput): Result<QueryParams> {
@@ -652,7 +667,7 @@ export function resolve(input: QueryInput): Result<QueryParams> {
     const doorno = stripDoorNumber(remainder);
     const { starty, startm, endy, endm, err } = resolvePeriodRange(input);
     if (err) return err;
-    const ptype = input.ptype ?? "1,2";
+    const ptype = defaultPtype(input);
     const resolvedLabel = doorno ? `${cityMatch.name} ${doorno}` : cityMatch.name;
     const data: QueryParams = {
       qryType: queryType(input),
@@ -692,7 +707,7 @@ export function resolve(input: QueryInput): Result<QueryParams> {
   const { starty, startm, endy, endm, err } = resolvePeriodRange(input);
   if (err) return err;
 
-  const ptype = input.ptype ?? "1,2";
+  const ptype = defaultPtype(input);
 
   const resolvedLabel = doorno
     ? `${cityMatch.name} ${districtMatch.name} ${doorno}`

@@ -2,13 +2,14 @@
 
 [![npm version](https://img.shields.io/npm/v/tw-lvr-cli.svg)](https://www.npmjs.com/package/tw-lvr-cli) [![license](https://img.shields.io/npm/l/tw-lvr-cli.svg)](./LICENSE) [![node](https://img.shields.io/node/v/tw-lvr-cli.svg)](https://nodejs.org)
 
-**低 context 佔用的台灣房價成交資料 CLI。** 把內政部實價登錄最新的逐棟成交價格，整理成乾淨的 JSON／CSV 寫到磁碟，不佔用 LLM 的 context——給 agent、app、腳本使用；並隨附 `SKILL.md`，打包成 Claude／Codex 相容的 plugin。npm 套件仍是 `tw-lvr-cli`，指令仍是 `tw-lvr`。
+**低 context 佔用的台灣房價成交資料 CLI。** 把內政部實價登錄最新的逐棟**成交價格與成交租金**，整理成乾淨的 JSON／CSV 寫到磁碟，不佔用 LLM 的 context——給 agent、app、腳本使用；並隨附 `SKILL.md`，打包成 Claude／Codex 相容的 plugin。npm 套件仍是 `tw-lvr-cli`，指令仍是 `tw-lvr`。
 
 > 只想查一間房？用 591 / 樂居就好——免費、UI 好、已清洗。TW Property Price CLI 補的是另一塊空缺：**能被程式／app／agent 直接吃的乾淨即時實價資料。**
+> 查租金行情？591 上是開價；`--rent` 給你的是實價登錄的**成交租金**——含租期、出租型態，還能把社會住宅補貼案件從市場行情中分開。
 
 <p align="center">
   <img src="media/readme-demo.gif"
-       alt="TW Property Price CLI demo：新竹關新路查詢回傳乾淨 JSON；新北板橋整區 8,482 筆寫入磁碟，0 列進入模型 context"
+       alt="TW Property Price CLI demo：大安區成交租金查詢回傳乾淨 JSON；新北板橋整區 8,775 筆寫入磁碟，0 列進入模型 context"
        width="100%">
 </p>
 
@@ -49,7 +50,25 @@
 | 無批次：整區要一頁頁翻 | 整個行政區一次取得、寫檔 |
 | 只能人點，無法程式化 | 可被腳本／agent／後端呼叫 |
 
-**目前涵蓋：** 買賣查詢（成屋）、預售屋查詢。**尚未支援：** 租賃查詢、預售屋建案查詢（兩者資料結構不同，列為後續）。
+**目前涵蓋：** 買賣查詢（成屋）、預售屋查詢、**租賃查詢（`--rent`）**。租賃有自己的輸出結構（月租金／坪租／租期／有無管理組織／附傢俱），不是把買賣欄位硬套。**尚未支援：** 預售屋建案查詢（建案清單，資料結構不同，列為後續）。
+
+查大安區最近 3 筆**成交租金**（欄位節錄；完整欄位見 `tw-lvr glossary --rent`）：
+
+```bash
+tw-lvr extract --where "台北市大安區" --from 202401 --to 202606 --rent --refine --top 3
+```
+
+```json
+[
+  { "address": "大安區臨江街93號三樓之1",           "txnDateRoc": "115/05/20", "monthlyRentTwd": 15000, "unitRentTwdPing": 2479, "rentalType": "分租套房", "rentalService": "一般代管",     "rentPeriod": "1150601~1160531" },
+  { "address": "大安區復興南路一段107巷5弄8號四樓", "txnDateRoc": "115/05/20", "monthlyRentTwd": 15200, "unitRentTwdPing": 3802, "rentalType": "分租雅房", "rentalService": "一般轉租",     "rentPeriod": "1150620~1160619" },
+  { "address": "大安區安居街124巷6號二樓",          "txnDateRoc": "115/05/20", "monthlyRentTwd": 22000, "unitRentTwdPing": 962,  "rentalType": "整戶出租", "rentalService": "社會住宅代管", "rentPeriod": "1150521~1160520" }
+]
+```
+
+第三筆是社會住宅代管（962 元/坪 vs 市場 2,479–3,802）——`rentalService` 讓你把補貼案件從市場行情中分開，這在 591／樂居上做不到。
+
+> 租賃小提醒：內政部 2023-09 起改用新版租賃申報書，新舊案件在政府網站內部走不同代碼——本工具兩邊都查，資料逐年連續、更新到當月（先看 stderr 的 `coverage:` 逐年筆數再談趨勢）。新制案件多了 `rentalType`（出租型態）、`rentalService`（租賃住宅服務——`社會住宅*` 開頭是補貼案件，做市場行情請先剔除）、`hasElevator`、`equipment` 等欄位。另外，租賃查詢帶路名時由 CLI 在本地過濾到該路段（政府網站的租賃查詢只到行政區層級，stderr 會註明過濾前後筆數）。
 
 ---
 
@@ -132,6 +151,7 @@ npx playwright install chromium-headless-shell    # 必裝——唯一的非 JS 
 tw-lvr extract --where "台北市信義區松德路169巷" --from 202401 --to 202612 --refine --pretty
 tw-lvr extract --where "新北市板橋區文化路一段" --from 202301 --to 202612 --out transactions.csv
 tw-lvr extract --where "苗栗縣竹南鎮" --from 202601 --to 202612 --presale --community "藏富天下"
+tw-lvr extract --where "台北市大安區" --from 202201 --to 202612 --rent --refine --top 10   # 租賃（日期區間拉寬）
 
 tw-lvr glossary       # 解釋每個輸出欄位、來源與公式
 tw-lvr --help / --version
@@ -140,16 +160,16 @@ tw-lvr --help / --version
 完整參數：
 ```
 tw-lvr extract --where <地址> --from <YYYYMM> --to <YYYYMM>
-               [--refine] [--ptype 1,2] [--query biz|sale | --presale]
+               [--refine] [--ptype 1,2] [--query biz|sale|rent | --presale | --rent]
                [--top N | --limit N] [--community <社區名>]
                [--out <檔案|資料夾>] [--format json|csv] [--pretty]
 ```
-- 預設 `--query biz`（成屋買賣）；`--presale` 切到預售屋。
+- 預設 `--query biz`（成屋買賣）；`--presale` 切到預售屋；`--rent` 切到租賃（輸出為租賃結構，欄位見 `tw-lvr glossary --rent`）。
 - **讓資料不進 context**：超過幾列就用 `--out` 寫檔，再讀回需要的片段。
 - 大範圍／長期間請分段（每次 ≤60 個月）；單次回應過大會以 `ERR_NETWORK` 失敗。
 - exit code：`0` 成功/無資料 · `2` 輸入錯誤 · `3` 網站改版 · `4` 網路 · `5` 被限流 · `6` 環境/瀏覽器 · `7` 部分成功。
 - 從原始碼開發：`bun install && bun run build`，再用 `node dist/cli.js extract ...`。
-- 想程式化呼叫？同一顆引擎可直接 `import`（`extract` / `extractRefined`，型別見 `src/index.ts`）。
+- 想程式化呼叫？同一顆引擎可直接 `import`（`extract` / `extractRefined`；租賃用 `extractRent` / `extractRentRefined`，型別見 `src/index.ts`）。
 
 ---
 

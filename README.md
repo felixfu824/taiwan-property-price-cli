@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="media/readme-demo.gif"
-       alt="TW Property Price CLI demo：大安區成交租金查詢回傳乾淨 JSON；新北板橋整區 8,775 筆寫入磁碟，0 列進入模型 context"
+       alt="TW Property Price CLI demo：關新路成交價查詢回傳乾淨 JSON；大安區成交租金查詢——非開價；新北板橋整區 8,775 筆寫入磁碟，0 列進入模型 context"
        width="100%">
 </p>
 

@@ -9,7 +9,7 @@
 
 <p align="center">
   <img src="media/readme-demo.gif"
-       alt="TW Property Price CLI demo — a Da'an District transacted-rent lookup returns clean JSON; a whole Banqiao district writes 8,775 rows to disk, 0 rows in model context"
+       alt="TW Property Price CLI demo — a sale-price lookup returns clean JSON; a Da'an District transacted-rent lookup follows (registered, not asking); a whole Banqiao district writes 8,775 rows to disk, 0 rows in model context"
        width="100%">
 </p>
 

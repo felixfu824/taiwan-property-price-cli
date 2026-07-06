@@ -486,6 +486,25 @@ export type {
 
 Callers should branch on `result.code` rather than parsing error text.
 
+### Browser lifetime and process exit
+
+The first fetch launches one warm `chrome-headless-shell` process that is
+reused across queries. After **15 seconds** with no in-flight fetch it closes
+automatically, so a plain script exits on its own shortly after its last
+query. Tune with `LVR_BROWSER_IDLE_MS` (milliseconds; `0` or less disables
+auto-close — then you own the shutdown). For immediate exit, or in servers and
+long-lived processes, call `closeBrowser()` when done:
+
+```ts
+import { extract, closeBrowser } from "tw-lvr-cli";
+
+const res = await extract(input);
+await closeBrowser(); // releases the warm browser; the process can exit now
+```
+
+A query that arrives inside the idle window reuses the warm browser; after an
+auto-close the next query pays a cold relaunch (~1–2 s).
+
 ### QueryInput
 
 ```ts

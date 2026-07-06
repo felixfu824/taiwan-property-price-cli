@@ -19,8 +19,38 @@ let _ctx: BrowserContext | null = null;
 let activeFetches = 0;
 let closeInProgress: Promise<void> | null = null;
 let idleWaiters: Array<() => void> = [];
+let idleCloseTimer: NodeJS.Timeout | null = null;
+
+/**
+ * The warm browser's child process holds the Node event loop open, so a plain
+ * library script would never exit on its own. After this many ms with no
+ * in-flight fetch, close the browser automatically (the timer itself is
+ * unref'd and never blocks exit). Override with LVR_BROWSER_IDLE_MS; a value
+ * of 0 or less disables auto-close (then call closeBrowser() yourself).
+ */
+const IDLE_CLOSE_MS = process.env.LVR_BROWSER_IDLE_MS === undefined || process.env.LVR_BROWSER_IDLE_MS === ""
+  ? 15_000
+  : Number(process.env.LVR_BROWSER_IDLE_MS);
+
+function disarmIdleClose(): void {
+  if (idleCloseTimer) {
+    clearTimeout(idleCloseTimer);
+    idleCloseTimer = null;
+  }
+}
+
+function armIdleClose(): void {
+  if (!(IDLE_CLOSE_MS > 0) || !_browser) return;
+  disarmIdleClose();
+  idleCloseTimer = setTimeout(() => {
+    idleCloseTimer = null;
+    void closeBrowser();
+  }, IDLE_CLOSE_MS);
+  idleCloseTimer.unref?.();
+}
 
 async function beginFetch(): Promise<void> {
+  disarmIdleClose();
   if (closeInProgress) await closeInProgress;
   activeFetches += 1;
 }
@@ -31,6 +61,7 @@ function endFetch(): void {
     const waiters = idleWaiters;
     idleWaiters = [];
     for (const resolve of waiters) resolve();
+    armIdleClose();
   }
 }
 
@@ -80,6 +111,7 @@ async function getContext(): Promise<BrowserContext> {
 
 /** Close the warm browser. Call on shutdown. */
 export async function closeBrowser(): Promise<void> {
+  disarmIdleClose();
   if (closeInProgress) return closeInProgress;
   closeInProgress = (async () => {
     await waitForIdle();
